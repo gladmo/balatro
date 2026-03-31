@@ -219,6 +219,10 @@ impl OwnedJokers {
         self.jokers.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.jokers.is_empty()
+    }
+
     pub fn has_space(&self) -> bool {
         self.jokers.len() < self.max_slots
     }

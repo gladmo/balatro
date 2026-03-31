@@ -130,11 +130,6 @@ fn spawn_blind_card(
         ));
 
         // Play button
-        let (play_bg, play_marker): (Color, _) = match name {
-            "Small Blind" => (Color::srgb(0.15, 0.5, 0.15), ()),
-            _ => (Color::srgb(0.15, 0.5, 0.15), ()),
-        };
-
         if name == "Small Blind" {
             card.spawn((
                 Button,

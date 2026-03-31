@@ -79,6 +79,10 @@ impl Hand {
         self.cards.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.cards.is_empty()
+    }
+
     pub fn is_full(&self) -> bool {
         self.cards.len() >= self.max_size
     }
@@ -133,6 +137,10 @@ impl DiscardPile {
 
     pub fn len(&self) -> usize {
         self.cards.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cards.is_empty()
     }
 }
 
