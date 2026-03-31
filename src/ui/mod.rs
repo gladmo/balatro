@@ -27,6 +27,7 @@ impl Plugin for UiPlugin {
             .add_systems(Update, game_ui::update_score_display.run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_hand_display.run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::card_selection_buttons.run_if(in_state(crate::GameState::Playing)))
+            .add_systems(Update, game_ui::update_card_tooltip.run_if(in_state(crate::GameState::Playing)))
             .add_systems(OnExit(crate::GameState::Playing), cleanup_screen::<game_ui::GameUiRoot>)
             // Shop
             .add_systems(OnEnter(crate::GameState::Shop), shop_ui::setup_shop)

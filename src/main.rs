@@ -14,6 +14,8 @@ mod game_data;
 mod shop;
 mod consumables;
 mod audio;
+mod animation;
+mod card_shader;
 mod localization;
 mod save;
 mod textures;
@@ -53,12 +55,13 @@ fn main() {
         // Resources
         .init_resource::<game_data::GameData>()
         .init_resource::<localization::Localization>()
-        .init_resource::<audio::AudioAssets>()
         .init_resource::<hand_eval::HandLevels>()
         .init_resource::<consumables::ConsumableSlots>()
         .init_resource::<shop::ShopState>()
         // Plugins
         .add_plugins(audio::AudioPlugin)
+        .add_plugins(animation::AnimationPlugin)
+        .add_plugins(card_shader::CardShaderPlugin)
         .add_plugins(ui::UiPlugin)
         // Startup systems
         .add_systems(Startup, setup)

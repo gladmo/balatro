@@ -7,6 +7,8 @@ use bevy::image::TextureAtlas;
 use crate::game_data::GameData;
 use crate::deck::{Hand, SelectedCards, Deck, DiscardPile};
 use crate::textures::GameTextures;
+use crate::animation::{CardHoverAnim, CardSelectAnim, ButtonFlash, trigger_flash};
+use crate::audio::{AudioAssets, play_sfx};
 
 #[derive(Component)]
 pub struct GameUiRoot;
@@ -27,6 +29,7 @@ pub struct MoneyDisplay;
 pub struct HandTypeDisplay;
 
 #[derive(Component)]
+/// Index of the card this button represents, used for tooltip lookups.
 pub struct HandCardButton {
     pub index: usize,
 }
@@ -39,6 +42,14 @@ pub struct DiscardButton;
 
 #[derive(Component)]
 pub struct HandCardsContainer;
+
+/// Tooltip panel that shows card details on hover.
+#[derive(Component)]
+pub struct CardTooltip;
+
+/// Marker to link a tooltip to the card index it describes.
+#[derive(Component)]
+pub struct CardTooltipText;
 
 pub fn setup_game_ui(
     mut commands: Commands,
@@ -232,13 +243,13 @@ pub fn setup_game_ui(
             },
         ));
 
-        // Hand cards area
+        // Hand cards area — relative positioning allows animation via Node.top
         root.spawn((
             Node {
                 width: Val::Percent(100.0),
-                height: Val::Px(160.0),
+                height: Val::Px(170.0),
                 flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
+                align_items: AlignItems::FlexEnd,
                 justify_content: JustifyContent::Center,
                 column_gap: Val::Px(8.0),
                 padding: UiRect::all(Val::Px(10.0)),
@@ -250,24 +261,25 @@ pub fn setup_game_ui(
             for (i, card) in hand.cards.iter().enumerate() {
                 let is_selected = selected.contains(i);
                 let sprite_idx = GameTextures::card_sprite_index(card.suit, card.rank);
-                let select_color = if is_selected {
-                    Color::srgba(0.5, 0.7, 1.0, 0.6)
-                } else {
-                    Color::WHITE
-                };
+                let select_color = if is_selected { Color::srgba(0.5, 0.7, 1.0, 0.75) } else { Color::WHITE };
+
+                // Each card uses relative positioning so Node.top drives the lift animation
+                let mut select_anim = CardSelectAnim::new();
+                select_anim.selected_offset = if is_selected { 20.0 } else { 0.0 };
+                select_anim.current = select_anim.selected_offset;
 
                 if let Some(ref tex) = textures {
-                    // Render card as atlas sprite from 8BitDeck.png
                     cards_area.spawn((
                         Button,
                         Node {
                             width: Val::Px(71.0),
                             height: Val::Px(95.0),
                             border: UiRect::all(Val::Px(3.0)),
+                            position_type: PositionType::Relative,
                             ..default()
                         },
                         BorderColor::from(if is_selected {
-                            Color::srgb(0.2, 0.6, 1.0)
+                            Color::srgb(0.2, 0.7, 1.0)
                         } else {
                             Color::NONE
                         }),
@@ -276,14 +288,11 @@ pub fn setup_game_ui(
                             TextureAtlas { layout: tex.cards_layout.clone(), index: sprite_idx },
                         ).with_color(select_color),
                         HandCardButton { index: i },
+                        CardHoverAnim::new(),
+                        select_anim,
                     ));
                 } else {
-                    // Fallback: colored rectangle with text
-                    let card_bg = if is_selected {
-                        Color::srgb(0.5, 0.6, 0.9)
-                    } else {
-                        Color::srgb(0.9, 0.88, 0.82)
-                    };
+                    let card_bg = if is_selected { Color::srgb(0.5, 0.6, 0.9) } else { Color::srgb(0.9, 0.88, 0.82) };
                     let card_label = card.short_display();
                     let suit_color = match card.suit {
                         crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
@@ -298,6 +307,7 @@ pub fn setup_game_ui(
                             justify_content: JustifyContent::Center,
                             border: UiRect::all(Val::Px(2.0)),
                             flex_direction: FlexDirection::Column,
+                            position_type: PositionType::Relative,
                             ..default()
                         },
                         BackgroundColor(card_bg),
@@ -314,7 +324,7 @@ pub fn setup_game_ui(
             }
         });
 
-        // Bottom action buttons
+        // Bottom action buttons with ButtonFlash animation
         root.spawn((
             Node {
                 width: Val::Percent(100.0),
@@ -328,6 +338,8 @@ pub fn setup_game_ui(
             },
             BackgroundColor(Color::srgb(0.05, 0.05, 0.08)),
         )).with_children(|actions| {
+            let play_base = Color::srgb(0.15, 0.5, 0.15);
+            let play_flash = Color::srgb(0.5, 1.0, 0.5);
             actions.spawn((
                 Button,
                 Node {
@@ -338,9 +350,10 @@ pub fn setup_game_ui(
                     border: UiRect::all(Val::Px(2.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgb(0.15, 0.5, 0.15)),
+                BackgroundColor(play_base),
                 BorderColor::from(Color::srgb(0.3, 0.8, 0.3)),
                 PlayHandButton,
+                ButtonFlash::new(play_flash, play_base),
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new("Play Hand"),
@@ -349,6 +362,8 @@ pub fn setup_game_ui(
                 ));
             });
 
+            let disc_base = Color::srgb(0.5, 0.25, 0.05);
+            let disc_flash = Color::srgb(1.0, 0.6, 0.2);
             actions.spawn((
                 Button,
                 Node {
@@ -359,9 +374,10 @@ pub fn setup_game_ui(
                     border: UiRect::all(Val::Px(2.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgb(0.5, 0.25, 0.05)),
+                BackgroundColor(disc_base),
                 BorderColor::from(Color::srgb(0.8, 0.5, 0.1)),
                 DiscardButton,
+                ButtonFlash::new(disc_flash, disc_base),
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new("Discard"),
@@ -369,6 +385,32 @@ pub fn setup_game_ui(
                     TextColor(Color::WHITE),
                 ));
             });
+        });
+
+        // Floating tooltip panel (initially hidden; shown by hover system)
+        root.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(185.0),
+                left: Val::Px(20.0),
+                padding: UiRect::all(Val::Px(8.0)),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(2.0),
+                min_width: Val::Px(120.0),
+                display: Display::None, // hidden by default
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.05, 0.05, 0.1, 0.92)),
+            BorderColor::from(Color::srgb(0.5, 0.5, 0.8)),
+            ZIndex(100),
+            CardTooltip,
+        )).with_children(|tip| {
+            tip.spawn((
+                Text::new(""),
+                TextFont { font_size: 14.0, ..default() },
+                TextColor(Color::WHITE),
+                CardTooltipText,
+            ));
         });
     });
 }
@@ -437,11 +479,11 @@ pub fn update_hand_display(
             for (i, card) in hand.cards.iter().enumerate() {
                 let is_selected = selected.contains(i);
                 let sprite_idx = GameTextures::card_sprite_index(card.suit, card.rank);
-                let select_color = if is_selected {
-                    Color::srgba(0.5, 0.7, 1.0, 0.6)
-                } else {
-                    Color::WHITE
-                };
+                let select_color = if is_selected { Color::srgba(0.5, 0.7, 1.0, 0.75) } else { Color::WHITE };
+
+                let mut sel_anim = CardSelectAnim::new();
+                sel_anim.selected_offset = if is_selected { 20.0 } else { 0.0 };
+                sel_anim.current = sel_anim.selected_offset;
 
                 if let Some(ref tex) = textures {
                     cards_area.spawn((
@@ -450,25 +492,20 @@ pub fn update_hand_display(
                             width: Val::Px(71.0),
                             height: Val::Px(95.0),
                             border: UiRect::all(Val::Px(3.0)),
+                            position_type: PositionType::Relative,
                             ..default()
                         },
-                        BorderColor::from(if is_selected {
-                            Color::srgb(0.2, 0.6, 1.0)
-                        } else {
-                            Color::NONE
-                        }),
+                        BorderColor::from(if is_selected { Color::srgb(0.2, 0.7, 1.0) } else { Color::NONE }),
                         ImageNode::from_atlas_image(
                             tex.cards.clone(),
                             TextureAtlas { layout: tex.cards_layout.clone(), index: sprite_idx },
                         ).with_color(select_color),
                         HandCardButton { index: i },
+                        CardHoverAnim::new(),
+                        sel_anim,
                     ));
                 } else {
-                    let card_bg = if is_selected {
-                        Color::srgb(0.5, 0.6, 0.9)
-                    } else {
-                        Color::srgb(0.9, 0.88, 0.82)
-                    };
+                    let card_bg = if is_selected { Color::srgb(0.5, 0.6, 0.9) } else { Color::srgb(0.9, 0.88, 0.82) };
                     let card_label = card.short_display();
                     let suit_color = match card.suit {
                         crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
@@ -483,6 +520,7 @@ pub fn update_hand_display(
                             justify_content: JustifyContent::Center,
                             border: UiRect::all(Val::Px(2.0)),
                             flex_direction: FlexDirection::Column,
+                            position_type: PositionType::Relative,
                             ..default()
                         },
                         BackgroundColor(card_bg),
@@ -501,20 +539,75 @@ pub fn update_hand_display(
     }
 }
 
+/// Handles card selection toggle + selection animation + SFX.
 pub fn card_selection_buttons(
-    query: Query<(&Interaction, &HandCardButton), Changed<Interaction>>,
+    mut query: Query<(&Interaction, &HandCardButton, &mut CardSelectAnim, &mut BorderColor), Changed<Interaction>>,
     mut selected: ResMut<SelectedCards>,
+    mut commands: Commands,
+    audio: Option<Res<AudioAssets>>,
 ) {
-    for (interaction, btn) in &query {
+    for (interaction, btn, mut anim, mut border) in &mut query {
         if *interaction == Interaction::Pressed {
             selected.toggle(btn.index);
+            let is_sel = selected.contains(btn.index);
+            // Animate card up/down
+            anim.selected_offset = if is_sel { 20.0 } else { 0.0 };
+            // Highlight border
+            *border = BorderColor::from(if is_sel { Color::srgb(0.2, 0.7, 1.0) } else { Color::NONE });
+            // Play SFX
+            if let Some(ref a) = audio {
+                play_sfx(&mut commands, a.card_select.clone());
+            }
         }
     }
 }
 
+/// Shows/hides and updates the card tooltip based on which card is hovered.
+pub fn update_card_tooltip(
+    hand: Res<Hand>,
+    hover_query: Query<(&Interaction, &HandCardButton), Changed<Interaction>>,
+    mut tooltip_query: Query<&mut Node, With<CardTooltip>>,
+    mut tooltip_text_query: Query<&mut Text, With<CardTooltipText>>,
+) {
+    for (interaction, btn) in &hover_query {
+        let Some(card) = hand.cards.get(btn.index) else { continue };
+        match interaction {
+            Interaction::Hovered => {
+                // Build tooltip text from the card's attributes
+                let mut lines = vec![
+                    format!("{} of {}", card.rank.name(), card.suit.name()),
+                    format!("Chips: {}", card.base_chip_value()),
+                ];
+                if card.enhancement != crate::cards::Enhancement::None {
+                    lines.push(format!("Enhancement: {:?}", card.enhancement));
+                }
+                if card.edition != crate::cards::Edition::None {
+                    lines.push(format!("Edition: {:?}", card.edition));
+                }
+                if card.seal != crate::cards::Seal::None {
+                    lines.push(format!("Seal: {:?}", card.seal));
+                }
+                let text = lines.join("\n");
+                if let Ok(mut t) = tooltip_text_query.single_mut() {
+                    *t = Text::new(text);
+                }
+                if let Ok(mut n) = tooltip_query.single_mut() {
+                    n.display = Display::Flex;
+                }
+            }
+            _ => {
+                if let Ok(mut n) = tooltip_query.single_mut() {
+                    n.display = Display::None;
+                }
+            }
+        }
+    }
+}
+
+/// Handles Play/Discard button presses with SFX and button flash effects.
 pub fn game_buttons(
-    play_query: Query<&Interaction, (Changed<Interaction>, With<PlayHandButton>)>,
-    discard_query: Query<&Interaction, (Changed<Interaction>, With<DiscardButton>)>,
+    mut play_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<PlayHandButton>)>,
+    mut discard_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<DiscardButton>)>,
     mut game_data: ResMut<GameData>,
     mut deck: ResMut<Deck>,
     mut hand: ResMut<Hand>,
@@ -523,18 +616,21 @@ pub fn game_buttons(
     jokers: Res<crate::jokers::OwnedJokers>,
     mut hand_levels: ResMut<crate::hand_eval::HandLevels>,
     mut next_state: ResMut<NextState<crate::GameState>>,
+    mut commands: Commands,
+    audio: Option<Res<AudioAssets>>,
 ) {
-    for interaction in &play_query {
+    for (interaction, mut bg, mut flash) in &mut play_query {
         if *interaction == Interaction::Pressed {
             if !selected.is_empty() && game_data.hands_remaining > 0 {
+                // Flash the button
+                trigger_flash(&mut flash, &mut bg);
+                // Play SFX
+                if let Some(ref a) = audio {
+                    play_sfx(&mut commands, a.card_play.clone());
+                }
                 if let Some(new_state) = crate::scoring::execute_play_hand(
-                    &mut game_data,
-                    &mut deck,
-                    &mut hand,
-                    &mut selected,
-                    &mut discard_pile,
-                    &jokers,
-                    &mut hand_levels,
+                    &mut game_data, &mut deck, &mut hand, &mut selected,
+                    &mut discard_pile, &jokers, &mut hand_levels,
                 ) {
                     next_state.set(new_state);
                 }
@@ -542,15 +638,15 @@ pub fn game_buttons(
         }
     }
 
-    for interaction in &discard_query {
+    for (interaction, mut bg, mut flash) in &mut discard_query {
         if *interaction == Interaction::Pressed {
             if !selected.is_empty() && game_data.discards_remaining > 0 {
+                trigger_flash(&mut flash, &mut bg);
+                if let Some(ref a) = audio {
+                    play_sfx(&mut commands, a.card_discard.clone());
+                }
                 crate::scoring::execute_discard(
-                    &mut game_data,
-                    &mut deck,
-                    &mut hand,
-                    &mut selected,
-                    &mut discard_pile,
+                    &mut game_data, &mut deck, &mut hand, &mut selected, &mut discard_pile,
                 );
             }
         }
