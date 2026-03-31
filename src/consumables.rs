@@ -214,7 +214,6 @@ impl ConsumableSlots {
     }
 }
 
-#[derive(Event)]
 pub struct UseConsumableEvent {
     pub index: usize,
     pub selected_card_indices: Vec<usize>,

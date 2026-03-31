@@ -4,7 +4,6 @@
 use bevy::prelude::*;
 use crate::game_data::GameData;
 use crate::deck::{Hand, SelectedCards, Deck, DiscardPile};
-use crate::scoring::{PlayHandEvent, DiscardEvent};
 
 #[derive(Component)]
 pub struct GameUiRoot;
@@ -174,7 +173,7 @@ pub fn setup_game_ui(
                             ..default()
                         },
                         BackgroundColor(Color::srgb(0.25, 0.15, 0.35)),
-                        BorderColor(Color::srgb(0.6, 0.4, 0.8)),
+                        BorderColor::from(Color::srgb(0.6, 0.4, 0.8)),
                     )).with_children(|j| {
                         j.spawn((
                             Text::new(joker.name().to_string()),
@@ -253,7 +252,7 @@ pub fn setup_game_ui(
                         ..default()
                     },
                     BackgroundColor(card_bg),
-                    BorderColor(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
+                    BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
                     HandCardButton { index: i },
                 )).with_children(|card_btn| {
                     card_btn.spawn((
@@ -290,7 +289,7 @@ pub fn setup_game_ui(
                     ..default()
                 },
                 BackgroundColor(Color::srgb(0.15, 0.5, 0.15)),
-                BorderColor(Color::srgb(0.3, 0.8, 0.3)),
+                BorderColor::from(Color::srgb(0.3, 0.8, 0.3)),
                 PlayHandButton,
             )).with_children(|btn| {
                 btn.spawn((
@@ -311,7 +310,7 @@ pub fn setup_game_ui(
                     ..default()
                 },
                 BackgroundColor(Color::srgb(0.5, 0.25, 0.05)),
-                BorderColor(Color::srgb(0.8, 0.5, 0.1)),
+                BorderColor::from(Color::srgb(0.8, 0.5, 0.1)),
                 DiscardButton,
             )).with_children(|btn| {
                 btn.spawn((
@@ -381,7 +380,7 @@ pub fn update_hand_display(
     for entity in &container_query {
         // Remove old card buttons
         for (btn_entity, _) in &card_button_query {
-            commands.entity(btn_entity).despawn_recursive();
+            commands.entity(btn_entity).despawn();
         }
 
         // Spawn new card buttons
@@ -412,7 +411,7 @@ pub fn update_hand_display(
                         ..default()
                     },
                     BackgroundColor(card_bg),
-                    BorderColor(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
+                    BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
                     HandCardButton { index: i },
                 )).with_children(|card_btn| {
                     card_btn.spawn((
@@ -440,15 +439,29 @@ pub fn card_selection_buttons(
 pub fn game_buttons(
     play_query: Query<&Interaction, (Changed<Interaction>, With<PlayHandButton>)>,
     discard_query: Query<&Interaction, (Changed<Interaction>, With<DiscardButton>)>,
-    mut play_events: EventWriter<PlayHandEvent>,
-    mut discard_events: EventWriter<DiscardEvent>,
-    game_data: Res<GameData>,
-    selected: Res<SelectedCards>,
+    mut game_data: ResMut<GameData>,
+    mut deck: ResMut<Deck>,
+    mut hand: ResMut<Hand>,
+    mut selected: ResMut<SelectedCards>,
+    mut discard_pile: ResMut<DiscardPile>,
+    jokers: Res<crate::jokers::OwnedJokers>,
+    mut hand_levels: ResMut<crate::hand_eval::HandLevels>,
+    mut next_state: ResMut<NextState<crate::GameState>>,
 ) {
     for interaction in &play_query {
         if *interaction == Interaction::Pressed {
             if !selected.is_empty() && game_data.hands_remaining > 0 {
-                play_events.send(PlayHandEvent);
+                if let Some(new_state) = crate::scoring::execute_play_hand(
+                    &mut game_data,
+                    &mut deck,
+                    &mut hand,
+                    &mut selected,
+                    &mut discard_pile,
+                    &jokers,
+                    &mut hand_levels,
+                ) {
+                    next_state.set(new_state);
+                }
             }
         }
     }
@@ -456,7 +469,13 @@ pub fn game_buttons(
     for interaction in &discard_query {
         if *interaction == Interaction::Pressed {
             if !selected.is_empty() && game_data.discards_remaining > 0 {
-                discard_events.send(DiscardEvent);
+                crate::scoring::execute_discard(
+                    &mut game_data,
+                    &mut deck,
+                    &mut hand,
+                    &mut selected,
+                    &mut discard_pile,
+                );
             }
         }
     }

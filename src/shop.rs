@@ -105,74 +105,50 @@ impl ShopState {
     }
 }
 
-#[derive(Event)]
-pub struct BuyItemEvent {
-    pub index: usize,
-}
-
-#[derive(Event)]
-pub struct SellJokerEvent {
-    pub index: usize,
-}
-
-#[derive(Event)]
-pub struct RerollShopEvent;
-
-pub fn handle_buy_item(
-    mut events: EventReader<BuyItemEvent>,
-    mut shop: ResMut<ShopState>,
-    mut game_data: ResMut<GameData>,
-    mut jokers: ResMut<crate::jokers::OwnedJokers>,
-    mut consumables: ResMut<crate::consumables::ConsumableSlots>,
+pub fn execute_buy(
+    shop: &mut ShopState,
+    game_data: &mut GameData,
+    jokers: &mut crate::jokers::OwnedJokers,
+    consumables: &mut crate::consumables::ConsumableSlots,
+    index: usize,
 ) {
-    for event in events.read() {
-        let index = event.index;
-        if index >= shop.items.len() {
-            continue;
-        }
-        if let Some(ref item) = shop.items[index] {
-            let cost = item.cost();
-            if game_data.money >= cost {
-                let item = shop.buy_item(index);
-                if let Some(item) = item {
-                    game_data.money -= cost;
-                    match item {
-                        ShopItem::JokerItem(joker) => {
-                            jokers.add(joker);
-                        }
-                        ShopItem::ConsumableItem(consumable) => {
-                            consumables.add(consumable);
-                        }
-                    }
-                }
+    if index >= shop.items.len() {
+        return;
+    }
+    let cost = if let Some(ref item) = shop.items[index] {
+        item.cost()
+    } else {
+        return;
+    };
+    if game_data.money >= cost {
+        if let Some(item) = shop.buy_item(index) {
+            game_data.money -= cost;
+            match item {
+                ShopItem::JokerItem(joker) => { jokers.add(joker); }
+                ShopItem::ConsumableItem(consumable) => { consumables.add(consumable); }
             }
         }
     }
 }
 
-pub fn handle_sell_joker(
-    mut events: EventReader<SellJokerEvent>,
-    mut jokers: ResMut<crate::jokers::OwnedJokers>,
-    mut game_data: ResMut<GameData>,
+pub fn execute_sell(
+    jokers: &mut crate::jokers::OwnedJokers,
+    game_data: &mut GameData,
+    index: usize,
 ) {
-    for event in events.read() {
-        if let Some(joker) = jokers.remove(event.index) {
-            game_data.money += joker.sell_value;
-        }
+    if let Some(joker) = jokers.remove(index) {
+        game_data.money += joker.sell_value;
     }
 }
 
-pub fn handle_reroll_shop(
-    mut events: EventReader<RerollShopEvent>,
-    mut shop: ResMut<ShopState>,
-    mut game_data: ResMut<GameData>,
-    jokers: Res<crate::jokers::OwnedJokers>,
+pub fn execute_reroll(
+    shop: &mut ShopState,
+    game_data: &mut GameData,
+    jokers: &crate::jokers::OwnedJokers,
 ) {
-    for _ in events.read() {
-        if game_data.money >= shop.reroll_cost {
-            game_data.money -= shop.reroll_cost;
-            let mut rng = rand::thread_rng();
-            shop.reroll(&mut rng, jokers.len(), game_data.joker_slots as usize);
-        }
+    if game_data.money >= shop.reroll_cost {
+        game_data.money -= shop.reroll_cost;
+        let mut rng = rand::thread_rng();
+        shop.reroll(&mut rng, jokers.len(), game_data.joker_slots as usize);
     }
 }

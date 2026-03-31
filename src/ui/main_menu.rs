@@ -63,7 +63,7 @@ pub fn setup_main_menu(
                 ..default()
             },
             BackgroundColor(Color::srgb(0.15, 0.45, 0.15)),
-            BorderColor(Color::srgb(0.3, 0.7, 0.3)),
+            BorderColor::from(Color::srgb(0.3, 0.7, 0.3)),
             NewRunButton,
         )).with_children(|btn| {
             btn.spawn((
@@ -85,7 +85,7 @@ pub fn setup_main_menu(
                 ..default()
             },
             BackgroundColor(Color::srgb(0.4, 0.15, 0.15)),
-            BorderColor(Color::srgb(0.7, 0.3, 0.3)),
+            BorderColor::from(Color::srgb(0.7, 0.3, 0.3)),
             QuitButton,
         )).with_children(|btn| {
             btn.spawn((
@@ -109,7 +109,6 @@ pub fn main_menu_buttons(
     mut jokers: ResMut<crate::jokers::OwnedJokers>,
     mut hand_levels: ResMut<crate::hand_eval::HandLevels>,
     mut shop: ResMut<crate::shop::ShopState>,
-    mut exit: EventWriter<AppExit>,
 ) {
     for interaction in &new_run_query {
         if *interaction == Interaction::Pressed {
@@ -123,7 +122,7 @@ pub fn main_menu_buttons(
 
     for interaction in &quit_query {
         if *interaction == Interaction::Pressed {
-            exit.send(AppExit::Success);
+            std::process::exit(0);
         }
     }
 }

@@ -18,11 +18,7 @@ pub struct ScoringResult {
     pub hand_type: HandType,
 }
 
-#[derive(Event)]
-pub struct PlayHandEvent;
 
-#[derive(Event)]
-pub struct DiscardEvent;
 
 pub fn score_hand(
     played_cards: &[&Card],
@@ -227,106 +223,88 @@ pub fn score_hand(
     }
 }
 
-pub fn handle_play_hand(
-    mut events: EventReader<PlayHandEvent>,
-    mut game_data: ResMut<GameData>,
-    mut deck: ResMut<Deck>,
-    mut hand: ResMut<Hand>,
-    mut selected: ResMut<SelectedCards>,
-    mut discard_pile: ResMut<DiscardPile>,
-    jokers: Res<OwnedJokers>,
-    mut hand_levels: ResMut<HandLevels>,
-    mut next_state: ResMut<NextState<crate::GameState>>,
-) {
-    for _ in events.read() {
-        if selected.is_empty() || game_data.hands_remaining == 0 {
-            continue;
+pub fn execute_play_hand(
+    game_data: &mut GameData,
+    deck: &mut Deck,
+    hand: &mut Hand,
+    selected: &mut SelectedCards,
+    discard_pile: &mut DiscardPile,
+    jokers: &OwnedJokers,
+    hand_levels: &mut HandLevels,
+) -> Option<crate::GameState> {
+    if selected.is_empty() || game_data.hands_remaining == 0 {
+        return None;
+    }
+
+    let played_indices: Vec<usize> = selected.indices.clone();
+    let played_cards: Vec<Card> = played_indices.iter()
+        .filter_map(|&i| hand.cards.get(i).cloned())
+        .collect();
+
+    let hand_cards: Vec<&Card> = hand.cards.iter().collect();
+    let played_refs: Vec<&Card> = played_cards.iter().collect();
+
+    let mut rng = rand::thread_rng();
+    let result = score_hand(
+        &played_refs,
+        &hand_cards,
+        jokers,
+        game_data,
+        hand_levels,
+        deck.remaining(),
+        game_data.discards_remaining,
+        &mut rng,
+    );
+
+    game_data.score += result.final_score;
+    game_data.run_score += result.final_score;
+    game_data.money += result.money_gained;
+    game_data.hands_remaining -= 1;
+    game_data.record_hand_play(result.hand_type);
+    hand_levels.record_play(result.hand_type);
+
+    let mut sorted_indices = played_indices.clone();
+    sorted_indices.sort_by(|a, b| b.cmp(a));
+    for idx in sorted_indices {
+        if let Some(card) = hand.remove_at(idx) {
+            discard_pile.add_card(card);
         }
+    }
 
-        // Get selected cards
-        let played_indices: Vec<usize> = selected.indices.clone();
-        let played_cards: Vec<Card> = played_indices.iter()
-            .filter_map(|&i| {
-                if i < hand.cards.len() {
-                    Some(hand.cards[i].clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
+    selected.clear();
+    crate::deck::draw_to_hand(deck, hand);
 
-        let hand_cards: Vec<&Card> = hand.cards.iter().collect();
-        let played_refs: Vec<&Card> = played_cards.iter().collect();
-
-        let mut rng = rand::thread_rng();
-        let result = score_hand(
-            &played_refs,
-            &hand_cards,
-            &jokers,
-            &game_data,
-            &hand_levels,
-            deck.remaining(),
-            game_data.discards_remaining,
-            &mut rng,
-        );
-
-        game_data.score += result.final_score;
-        game_data.run_score += result.final_score;
-        game_data.money += result.money_gained;
-        game_data.hands_remaining -= 1;
-        game_data.record_hand_play(result.hand_type);
-        hand_levels.record_play(result.hand_type);
-
-        // Remove played cards from hand (in reverse order to maintain indices)
-        let mut sorted_indices = played_indices.clone();
-        sorted_indices.sort_by(|a, b| b.cmp(a));
-        for idx in sorted_indices {
-            if let Some(card) = hand.remove_at(idx) {
-                discard_pile.add_card(card);
-            }
-        }
-
-        selected.clear();
-
-        // Draw back up
-        crate::deck::draw_to_hand(&mut deck, &mut hand);
-
-        // Check if blind is beaten
-        if game_data.score >= game_data.blind_target {
-            next_state.set(crate::GameState::Shop);
-        } else if game_data.hands_remaining == 0 {
-            next_state.set(crate::GameState::GameOver);
-        }
+    if game_data.score >= game_data.blind_target {
+        Some(crate::GameState::Shop)
+    } else if game_data.hands_remaining == 0 {
+        Some(crate::GameState::GameOver)
+    } else {
+        None
     }
 }
 
-pub fn handle_discard(
-    mut events: EventReader<DiscardEvent>,
-    mut game_data: ResMut<GameData>,
-    mut deck: ResMut<Deck>,
-    mut hand: ResMut<Hand>,
-    mut selected: ResMut<SelectedCards>,
-    mut discard_pile: ResMut<DiscardPile>,
+pub fn execute_discard(
+    game_data: &mut GameData,
+    deck: &mut Deck,
+    hand: &mut Hand,
+    selected: &mut SelectedCards,
+    discard_pile: &mut DiscardPile,
 ) {
-    for _ in events.read() {
-        if selected.is_empty() || game_data.discards_remaining == 0 {
-            continue;
-        }
-
-        let discard_indices: Vec<usize> = selected.indices.clone();
-        let mut sorted_indices = discard_indices.clone();
-        sorted_indices.sort_by(|a, b| b.cmp(a));
-
-        for idx in sorted_indices {
-            if let Some(card) = hand.remove_at(idx) {
-                discard_pile.add_card(card);
-            }
-        }
-
-        selected.clear();
-        game_data.discards_remaining -= 1;
-
-        // Draw back up
-        crate::deck::draw_to_hand(&mut deck, &mut hand);
+    if selected.is_empty() || game_data.discards_remaining == 0 {
+        return;
     }
+
+    let discard_indices: Vec<usize> = selected.indices.clone();
+    let mut sorted_indices = discard_indices.clone();
+    sorted_indices.sort_by(|a, b| b.cmp(a));
+
+    for idx in sorted_indices {
+        if let Some(card) = hand.remove_at(idx) {
+            discard_pile.add_card(card);
+        }
+    }
+
+    selected.clear();
+    game_data.discards_remaining -= 1;
+    crate::deck::draw_to_hand(deck, hand);
 }

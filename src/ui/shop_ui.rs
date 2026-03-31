@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 use crate::game_data::GameData;
-use crate::shop::{ShopState, BuyItemEvent, SellJokerEvent, RerollShopEvent};
+use crate::shop::ShopState;
 use crate::jokers::OwnedJokers;
 use crate::consumables::ConsumableSlots;
 
@@ -140,7 +140,7 @@ pub fn setup_shop(
                         ..default()
                     },
                     BackgroundColor(bg),
-                    BorderColor(Color::srgb(0.4, 0.4, 0.6)),
+                    BorderColor::from(Color::srgb(0.4, 0.4, 0.6)),
                 )).with_children(|item_card| {
                     item_card.spawn((
                         Text::new(name.clone()),
@@ -213,7 +213,7 @@ pub fn setup_shop(
                             ..default()
                         },
                         BackgroundColor(Color::srgb(0.2, 0.12, 0.3)),
-                        BorderColor(Color::srgb(0.6, 0.4, 0.8)),
+                        BorderColor::from(Color::srgb(0.6, 0.4, 0.8)),
                     )).with_children(|jcard| {
                         jcard.spawn((
                             Text::new(name.clone()),
@@ -271,7 +271,7 @@ pub fn setup_shop(
                     ..default()
                 },
                 BackgroundColor(Color::srgb(0.3, 0.25, 0.1)),
-                BorderColor(Color::srgb(0.6, 0.5, 0.2)),
+                BorderColor::from(Color::srgb(0.6, 0.5, 0.2)),
                 ShopRerollButton,
             )).with_children(|btn| {
                 btn.spawn((
@@ -292,7 +292,7 @@ pub fn setup_shop(
                     ..default()
                 },
                 BackgroundColor(Color::srgb(0.2, 0.4, 0.6)),
-                BorderColor(Color::srgb(0.3, 0.6, 0.9)),
+                BorderColor::from(Color::srgb(0.3, 0.6, 0.9)),
                 ShopContinueButton,
             )).with_children(|btn| {
                 btn.spawn((
@@ -310,43 +310,39 @@ pub fn shop_buttons(
     sell_query: Query<(&Interaction, &ShopSellButton), Changed<Interaction>>,
     reroll_query: Query<&Interaction, (Changed<Interaction>, With<ShopRerollButton>)>,
     continue_query: Query<&Interaction, (Changed<Interaction>, With<ShopContinueButton>)>,
-    mut buy_events: EventWriter<BuyItemEvent>,
-    mut sell_events: EventWriter<SellJokerEvent>,
-    mut reroll_events: EventWriter<RerollShopEvent>,
-    mut next_state: ResMut<NextState<crate::GameState>>,
+    mut shop: ResMut<ShopState>,
     mut game_data: ResMut<GameData>,
-    jokers: Res<OwnedJokers>,
+    mut jokers: ResMut<OwnedJokers>,
+    mut consumables: ResMut<ConsumableSlots>,
+    mut next_state: ResMut<NextState<crate::GameState>>,
 ) {
     for (interaction, btn) in &buy_query {
         if *interaction == Interaction::Pressed {
-            buy_events.send(BuyItemEvent { index: btn.index });
+            crate::shop::execute_buy(&mut shop, &mut game_data, &mut jokers, &mut consumables, btn.index);
         }
     }
 
     for (interaction, btn) in &sell_query {
         if *interaction == Interaction::Pressed {
-            sell_events.send(SellJokerEvent { index: btn.index });
+            crate::shop::execute_sell(&mut jokers, &mut game_data, btn.index);
         }
     }
 
     for interaction in &reroll_query {
         if *interaction == Interaction::Pressed {
-            reroll_events.send(RerollShopEvent);
+            crate::shop::execute_reroll(&mut shop, &mut game_data, &jokers);
         }
     }
 
     for interaction in &continue_query {
         if *interaction == Interaction::Pressed {
-            // Award money for beating the blind
             let reward = game_data.blind_reward();
             let interest = game_data.interest();
             game_data.money += reward + interest;
 
-            // Golden joker bonus
             let golden_count = jokers.jokers.iter().filter(|j| j.id == crate::jokers::JokerId::GoldenJoker).count();
             game_data.money += golden_count as i32 * 4;
 
-            // Advance to next blind
             game_data.advance_blind();
 
             if game_data.is_game_won() {

@@ -23,12 +23,10 @@ impl Plugin for UiPlugin {
             .add_systems(OnExit(crate::GameState::BlindSelect), cleanup_screen::<blind_select::BlindSelectRoot>)
             // Playing
             .add_systems(OnEnter(crate::GameState::Playing), game_ui::setup_game_ui)
-            .add_systems(Update, (
-                game_ui::game_buttons,
-                game_ui::update_score_display,
-                game_ui::update_hand_display,
-                game_ui::card_selection_buttons,
-            ).run_if(in_state(crate::GameState::Playing)))
+            .add_systems(Update, game_ui::game_buttons.run_if(in_state(crate::GameState::Playing)))
+            .add_systems(Update, game_ui::update_score_display.run_if(in_state(crate::GameState::Playing)))
+            .add_systems(Update, game_ui::update_hand_display.run_if(in_state(crate::GameState::Playing)))
+            .add_systems(Update, game_ui::card_selection_buttons.run_if(in_state(crate::GameState::Playing)))
             .add_systems(OnExit(crate::GameState::Playing), cleanup_screen::<game_ui::GameUiRoot>)
             // Shop
             .add_systems(OnEnter(crate::GameState::Shop), shop_ui::setup_shop)
@@ -50,7 +48,7 @@ pub fn cleanup_screen<T: Component>(
     query: Query<Entity, With<T>>,
 ) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

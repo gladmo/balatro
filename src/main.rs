@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use bevy::window::WindowResolution;
 
 mod cards;
 mod deck;
@@ -33,7 +34,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Balatro".to_string(),
-                resolution: (1280.0, 720.0).into(),
+                resolution: WindowResolution::new(1280, 720),
                 ..default()
             }),
             ..default()
@@ -47,26 +48,11 @@ fn main() {
         .init_resource::<hand_eval::HandLevels>()
         .init_resource::<consumables::ConsumableSlots>()
         .init_resource::<shop::ShopState>()
-        // Events
-        .add_event::<scoring::PlayHandEvent>()
-        .add_event::<scoring::DiscardEvent>()
-        .add_event::<shop::BuyItemEvent>()
-        .add_event::<shop::SellJokerEvent>()
-        .add_event::<shop::RerollShopEvent>()
-        .add_event::<consumables::UseConsumableEvent>()
         // Plugins
         .add_plugins(audio::AudioPlugin)
         .add_plugins(ui::UiPlugin)
         // Startup
         .add_systems(Startup, setup)
-        // Game systems
-        .add_systems(Update, (
-            scoring::handle_play_hand,
-            scoring::handle_discard,
-            shop::handle_buy_item,
-            shop::handle_sell_joker,
-            shop::handle_reroll_shop,
-        ).run_if(in_state(GameState::Playing).or(in_state(GameState::Shop))))
         .run();
 }
 
