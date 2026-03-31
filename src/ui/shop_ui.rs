@@ -2,10 +2,13 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use bevy::ui::widget::ImageNode;
+use bevy::image::TextureAtlas;
 use crate::game_data::GameData;
-use crate::shop::ShopState;
+use crate::shop::{ShopState, ShopItem};
 use crate::jokers::OwnedJokers;
-use crate::consumables::ConsumableSlots;
+use crate::consumables::{ConsumableSlots, Consumable};
+use crate::textures::GameTextures;
 
 #[derive(Component)]
 pub struct ShopRoot;
@@ -31,6 +34,7 @@ pub fn setup_shop(
     mut shop: ResMut<ShopState>,
     game_data: Res<GameData>,
     jokers: Res<OwnedJokers>,
+    textures: Option<Res<GameTextures>>,
 ) {
     // Generate shop items
     let mut rng = rand::thread_rng();
@@ -43,16 +47,50 @@ pub fn setup_shop(
     let interest = game_data.interest();
     let reroll_cost = shop.reroll_cost;
 
-    // Pre-collect shop item data for UI
-    let shop_items: Vec<(String, String, i32)> = shop.items.iter().map(|item| {
+    // Pre-collect shop item data + sprite indices
+    struct ShopItemUiData {
+        name: String,
+        desc: String,
+        cost: i32,
+        joker_sprite: Option<usize>,   // index into Jokers atlas
+        tarot_sprite: Option<usize>,   // index into Tarots atlas
+    }
+    let shop_items: Vec<ShopItemUiData> = shop.items.iter().map(|item| {
         match item {
-            Some(i) => (i.name(), i.description(), i.cost()),
-            None => ("Empty".to_string(), "".to_string(), 0),
+            Some(ShopItem::JokerItem(j)) => ShopItemUiData {
+                name: j.name().to_string(),
+                desc: j.description().to_string(),
+                cost: j.cost,
+                joker_sprite: Some(GameTextures::joker_sprite_index(j.id)),
+                tarot_sprite: None,
+            },
+            Some(ShopItem::ConsumableItem(Consumable::Tarot(t))) => ShopItemUiData {
+                name: t.name().to_string(),
+                desc: t.description().to_string(),
+                cost: Consumable::Tarot(*t).cost(),
+                joker_sprite: None,
+                tarot_sprite: Some(GameTextures::tarot_sprite_index(*t)),
+            },
+            Some(ShopItem::ConsumableItem(Consumable::Planet(p))) => ShopItemUiData {
+                name: p.name().to_string(),
+                desc: p.description().to_string(),
+                cost: Consumable::Planet(*p).cost(),
+                joker_sprite: None,
+                tarot_sprite: Some(GameTextures::planet_sprite_index(*p)),
+            },
+            None => ShopItemUiData {
+                name: "Empty".to_string(),
+                desc: "".to_string(),
+                cost: 0,
+                joker_sprite: None,
+                tarot_sprite: None,
+            },
         }
     }).collect();
 
-    let joker_data: Vec<(String, String, i32)> = jokers.jokers.iter().map(|j| {
-        (j.name().to_string(), j.description().to_string(), j.sell_value)
+    // Owned joker data + sprite indices
+    let joker_data: Vec<(String, String, i32, usize)> = jokers.jokers.iter().map(|j| {
+        (j.name().to_string(), j.description().to_string(), j.sell_value, GameTextures::joker_sprite_index(j.id))
     }).collect();
 
     commands.spawn((
@@ -118,11 +156,11 @@ pub fn setup_shop(
                 ..default()
             },
         )).with_children(|items_row| {
-            for (i, (name, desc, cost)) in shop_items.iter().enumerate() {
-                if name == "Empty" {
+            for (i, item) in shop_items.iter().enumerate() {
+                if item.name == "Empty" {
                     continue;
                 }
-                let can_afford = money >= *cost;
+                let can_afford = money >= item.cost;
                 let bg = if can_afford {
                     Color::srgb(0.12, 0.18, 0.28)
                 } else {
@@ -133,31 +171,51 @@ pub fn setup_shop(
                     Node {
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
-                        width: Val::Px(180.0),
-                        padding: UiRect::all(Val::Px(10.0)),
-                        row_gap: Val::Px(8.0),
+                        width: Val::Px(100.0),
+                        padding: UiRect::all(Val::Px(8.0)),
+                        row_gap: Val::Px(6.0),
                         border: UiRect::all(Val::Px(2.0)),
                         ..default()
                     },
                     BackgroundColor(bg),
                     BorderColor::from(Color::srgb(0.4, 0.4, 0.6)),
                 )).with_children(|item_card| {
-                    item_card.spawn((
-                        Text::new(name.clone()),
-                        TextFont { font_size: 18.0, ..default() },
-                        TextColor(Color::WHITE),
-                    ));
+                    // Show sprite if textures are available
+                    if let Some(ref tex) = textures {
+                        if let Some(idx) = item.joker_sprite {
+                            item_card.spawn((
+                                Node { width: Val::Px(71.0), height: Val::Px(95.0), ..default() },
+                                ImageNode::from_atlas_image(
+                                    tex.jokers.clone(),
+                                    TextureAtlas { layout: tex.jokers_layout.clone(), index: idx },
+                                ),
+                            ));
+                        } else if let Some(idx) = item.tarot_sprite {
+                            item_card.spawn((
+                                Node { width: Val::Px(71.0), height: Val::Px(95.0), ..default() },
+                                ImageNode::from_atlas_image(
+                                    tex.tarots.clone(),
+                                    TextureAtlas { layout: tex.tarots_layout.clone(), index: idx },
+                                ),
+                            ));
+                        }
+                    } else {
+                        item_card.spawn((
+                            Text::new(item.name.clone()),
+                            TextFont { font_size: 14.0, ..default() },
+                            TextColor(Color::WHITE),
+                        ));
+                        item_card.spawn((
+                            Text::new(item.desc.clone()),
+                            TextFont { font_size: 11.0, ..default() },
+                            TextColor(Color::srgb(0.7, 0.8, 0.9)),
+                        ));
+                    }
 
-                    item_card.spawn((
-                        Text::new(desc.clone()),
-                        TextFont { font_size: 13.0, ..default() },
-                        TextColor(Color::srgb(0.7, 0.8, 0.9)),
-                    ));
-
-                    let price_text = format!("${}", cost);
+                    let price_text = format!("${}", item.cost);
                     item_card.spawn((
                         Text::new(price_text),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font_size: 18.0, ..default() },
                         TextColor(if can_afford { Color::srgb(0.9, 0.8, 0.1) } else { Color::srgb(0.6, 0.3, 0.3) }),
                     ));
 
@@ -165,8 +223,8 @@ pub fn setup_shop(
                         item_card.spawn((
                             Button,
                             Node {
-                                width: Val::Px(120.0),
-                                height: Val::Px(35.0),
+                                width: Val::Px(80.0),
+                                height: Val::Px(30.0),
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Center,
                                 ..default()
@@ -176,7 +234,7 @@ pub fn setup_shop(
                         )).with_children(|btn| {
                             btn.spawn((
                                 Text::new("Buy"),
-                                TextFont { font_size: 18.0, ..default() },
+                                TextFont { font_size: 16.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
                         });
@@ -201,37 +259,41 @@ pub fn setup_shop(
                     ..default()
                 },
             )).with_children(|joker_row| {
-                for (i, (name, desc, sell_val)) in joker_data.iter().enumerate() {
+                for (i, (name, desc, sell_val, sprite_idx)) in joker_data.iter().enumerate() {
                     joker_row.spawn((
                         Node {
                             flex_direction: FlexDirection::Column,
                             align_items: AlignItems::Center,
-                            width: Val::Px(130.0),
-                            padding: UiRect::all(Val::Px(8.0)),
-                            row_gap: Val::Px(6.0),
+                            width: Val::Px(100.0),
+                            padding: UiRect::all(Val::Px(6.0)),
+                            row_gap: Val::Px(4.0),
                             border: UiRect::all(Val::Px(1.0)),
                             ..default()
                         },
                         BackgroundColor(Color::srgb(0.2, 0.12, 0.3)),
                         BorderColor::from(Color::srgb(0.6, 0.4, 0.8)),
                     )).with_children(|jcard| {
-                        jcard.spawn((
-                            Text::new(name.clone()),
-                            TextFont { font_size: 14.0, ..default() },
-                            TextColor(Color::WHITE),
-                        ));
-
-                        jcard.spawn((
-                            Text::new(desc.clone()),
-                            TextFont { font_size: 11.0, ..default() },
-                            TextColor(Color::srgb(0.7, 0.7, 0.9)),
-                        ));
+                        if let Some(ref tex) = textures {
+                            jcard.spawn((
+                                Node { width: Val::Px(71.0), height: Val::Px(95.0), ..default() },
+                                ImageNode::from_atlas_image(
+                                    tex.jokers.clone(),
+                                    TextureAtlas { layout: tex.jokers_layout.clone(), index: *sprite_idx },
+                                ),
+                            ));
+                        } else {
+                            jcard.spawn((
+                                Text::new(name.clone()),
+                                TextFont { font_size: 12.0, ..default() },
+                                TextColor(Color::WHITE),
+                            ));
+                        }
 
                         jcard.spawn((
                             Button,
                             Node {
-                                width: Val::Px(100.0),
-                                height: Val::Px(28.0),
+                                width: Val::Px(85.0),
+                                height: Val::Px(26.0),
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Center,
                                 ..default()
@@ -241,7 +303,7 @@ pub fn setup_shop(
                         )).with_children(|btn| {
                             btn.spawn((
                                 Text::new(format!("Sell ${}", sell_val)),
-                                TextFont { font_size: 14.0, ..default() },
+                                TextFont { font_size: 13.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
                         });

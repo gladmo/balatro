@@ -2,8 +2,11 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use bevy::ui::widget::ImageNode;
+use bevy::image::TextureAtlas;
 use crate::game_data::GameData;
 use crate::deck::{Hand, SelectedCards, Deck, DiscardPile};
+use crate::textures::GameTextures;
 
 #[derive(Component)]
 pub struct GameUiRoot;
@@ -43,6 +46,7 @@ pub fn setup_game_ui(
     hand: Res<Hand>,
     selected: Res<SelectedCards>,
     jokers: Res<crate::jokers::OwnedJokers>,
+    textures: Option<Res<GameTextures>>,
 ) {
     commands.spawn((
         Node {
@@ -152,7 +156,7 @@ pub fn setup_game_ui(
             root.spawn((
                 Node {
                     width: Val::Percent(100.0),
-                    height: Val::Px(60.0),
+                    height: Val::Px(80.0),
                     flex_direction: FlexDirection::Row,
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
@@ -163,24 +167,41 @@ pub fn setup_game_ui(
                 BackgroundColor(Color::srgb(0.1, 0.08, 0.12)),
             )).with_children(|joker_row| {
                 for joker in &jokers.jokers {
-                    joker_row.spawn((
-                        Node {
-                            width: Val::Px(100.0),
-                            height: Val::Px(50.0),
-                            align_items: AlignItems::Center,
-                            justify_content: JustifyContent::Center,
-                            border: UiRect::all(Val::Px(1.0)),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(0.25, 0.15, 0.35)),
-                        BorderColor::from(Color::srgb(0.6, 0.4, 0.8)),
-                    )).with_children(|j| {
-                        j.spawn((
-                            Text::new(joker.name().to_string()),
-                            TextFont { font_size: 12.0, ..default() },
-                            TextColor(Color::srgb(0.9, 0.8, 1.0)),
+                    let sprite_idx = GameTextures::joker_sprite_index(joker.id);
+                    if let Some(ref tex) = textures {
+                        // Show joker sprite from Jokers.png atlas
+                        joker_row.spawn((
+                            Node {
+                                width: Val::Px(71.0),
+                                height: Val::Px(95.0),
+                                ..default()
+                            },
+                            ImageNode::from_atlas_image(
+                                tex.jokers.clone(),
+                                TextureAtlas { layout: tex.jokers_layout.clone(), index: sprite_idx },
+                            ),
                         ));
-                    });
+                    } else {
+                        // Fallback: text badge
+                        joker_row.spawn((
+                            Node {
+                                width: Val::Px(71.0),
+                                height: Val::Px(95.0),
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Center,
+                                border: UiRect::all(Val::Px(1.0)),
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgb(0.25, 0.15, 0.35)),
+                            BorderColor::from(Color::srgb(0.6, 0.4, 0.8)),
+                        )).with_children(|j| {
+                            j.spawn((
+                                Text::new(joker.name().to_string()),
+                                TextFont { font_size: 10.0, ..default() },
+                                TextColor(Color::srgb(0.9, 0.8, 1.0)),
+                            ));
+                        });
+                    }
                 }
             });
         }
@@ -228,39 +249,68 @@ pub fn setup_game_ui(
         )).with_children(|cards_area| {
             for (i, card) in hand.cards.iter().enumerate() {
                 let is_selected = selected.contains(i);
-                let card_bg = if is_selected {
-                    Color::srgb(0.5, 0.6, 0.9)
+                let sprite_idx = GameTextures::card_sprite_index(card.suit, card.rank);
+                let select_color = if is_selected {
+                    Color::srgba(0.5, 0.7, 1.0, 0.6)
                 } else {
-                    Color::srgb(0.9, 0.88, 0.82)
+                    Color::WHITE
                 };
 
-                let card_label = card.short_display();
-                let suit_color = match card.suit {
-                    crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
-                    _ => Color::srgb(0.05, 0.05, 0.05),
-                };
-
-                cards_area.spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(70.0),
-                        height: Val::Px(100.0),
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        border: UiRect::all(Val::Px(2.0)),
-                        flex_direction: FlexDirection::Column,
-                        ..default()
-                    },
-                    BackgroundColor(card_bg),
-                    BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
-                    HandCardButton { index: i },
-                )).with_children(|card_btn| {
-                    card_btn.spawn((
-                        Text::new(card_label),
-                        TextFont { font_size: 20.0, ..default() },
-                        TextColor(suit_color),
+                if let Some(ref tex) = textures {
+                    // Render card as atlas sprite from 8BitDeck.png
+                    cards_area.spawn((
+                        Button,
+                        Node {
+                            width: Val::Px(71.0),
+                            height: Val::Px(95.0),
+                            border: UiRect::all(Val::Px(3.0)),
+                            ..default()
+                        },
+                        BorderColor::from(if is_selected {
+                            Color::srgb(0.2, 0.6, 1.0)
+                        } else {
+                            Color::NONE
+                        }),
+                        ImageNode::from_atlas_image(
+                            tex.cards.clone(),
+                            TextureAtlas { layout: tex.cards_layout.clone(), index: sprite_idx },
+                        ).with_color(select_color),
+                        HandCardButton { index: i },
                     ));
-                });
+                } else {
+                    // Fallback: colored rectangle with text
+                    let card_bg = if is_selected {
+                        Color::srgb(0.5, 0.6, 0.9)
+                    } else {
+                        Color::srgb(0.9, 0.88, 0.82)
+                    };
+                    let card_label = card.short_display();
+                    let suit_color = match card.suit {
+                        crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
+                        _ => Color::srgb(0.05, 0.05, 0.05),
+                    };
+                    cards_area.spawn((
+                        Button,
+                        Node {
+                            width: Val::Px(70.0),
+                            height: Val::Px(95.0),
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            border: UiRect::all(Val::Px(2.0)),
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        },
+                        BackgroundColor(card_bg),
+                        BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
+                        HandCardButton { index: i },
+                    )).with_children(|card_btn| {
+                        card_btn.spawn((
+                            Text::new(card_label),
+                            TextFont { font_size: 20.0, ..default() },
+                            TextColor(suit_color),
+                        ));
+                    });
+                }
             }
         });
 
@@ -355,6 +405,7 @@ pub fn update_hand_display(
     mut hand_type_query: Query<&mut Text, With<HandTypeDisplay>>,
     container_query: Query<Entity, With<HandCardsContainer>>,
     card_button_query: Query<(Entity, &HandCardButton)>,
+    textures: Option<Res<GameTextures>>,
 ) {
     if !hand.is_changed() && !selected.is_changed() {
         return;
@@ -378,48 +429,73 @@ pub fn update_hand_display(
 
     // Rebuild hand cards
     for entity in &container_query {
-        // Remove old card buttons
         for (btn_entity, _) in &card_button_query {
             commands.entity(btn_entity).despawn();
         }
 
-        // Spawn new card buttons
         commands.entity(entity).with_children(|cards_area| {
             for (i, card) in hand.cards.iter().enumerate() {
                 let is_selected = selected.contains(i);
-                let card_bg = if is_selected {
-                    Color::srgb(0.5, 0.6, 0.9)
+                let sprite_idx = GameTextures::card_sprite_index(card.suit, card.rank);
+                let select_color = if is_selected {
+                    Color::srgba(0.5, 0.7, 1.0, 0.6)
                 } else {
-                    Color::srgb(0.9, 0.88, 0.82)
+                    Color::WHITE
                 };
 
-                let card_label = card.short_display();
-                let suit_color = match card.suit {
-                    crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
-                    _ => Color::srgb(0.05, 0.05, 0.05),
-                };
-
-                cards_area.spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(70.0),
-                        height: Val::Px(100.0),
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        border: UiRect::all(Val::Px(2.0)),
-                        flex_direction: FlexDirection::Column,
-                        ..default()
-                    },
-                    BackgroundColor(card_bg),
-                    BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
-                    HandCardButton { index: i },
-                )).with_children(|card_btn| {
-                    card_btn.spawn((
-                        Text::new(card_label),
-                        TextFont { font_size: 20.0, ..default() },
-                        TextColor(suit_color),
+                if let Some(ref tex) = textures {
+                    cards_area.spawn((
+                        Button,
+                        Node {
+                            width: Val::Px(71.0),
+                            height: Val::Px(95.0),
+                            border: UiRect::all(Val::Px(3.0)),
+                            ..default()
+                        },
+                        BorderColor::from(if is_selected {
+                            Color::srgb(0.2, 0.6, 1.0)
+                        } else {
+                            Color::NONE
+                        }),
+                        ImageNode::from_atlas_image(
+                            tex.cards.clone(),
+                            TextureAtlas { layout: tex.cards_layout.clone(), index: sprite_idx },
+                        ).with_color(select_color),
+                        HandCardButton { index: i },
                     ));
-                });
+                } else {
+                    let card_bg = if is_selected {
+                        Color::srgb(0.5, 0.6, 0.9)
+                    } else {
+                        Color::srgb(0.9, 0.88, 0.82)
+                    };
+                    let card_label = card.short_display();
+                    let suit_color = match card.suit {
+                        crate::cards::Suit::Hearts | crate::cards::Suit::Diamonds => Color::srgb(0.8, 0.1, 0.1),
+                        _ => Color::srgb(0.05, 0.05, 0.05),
+                    };
+                    cards_area.spawn((
+                        Button,
+                        Node {
+                            width: Val::Px(70.0),
+                            height: Val::Px(95.0),
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            border: UiRect::all(Val::Px(2.0)),
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        },
+                        BackgroundColor(card_bg),
+                        BorderColor::from(if is_selected { Color::srgb(0.2, 0.4, 1.0) } else { Color::srgb(0.3, 0.3, 0.3) }),
+                        HandCardButton { index: i },
+                    )).with_children(|card_btn| {
+                        card_btn.spawn((
+                            Text::new(card_label),
+                            TextFont { font_size: 20.0, ..default() },
+                            TextColor(suit_color),
+                        ));
+                    });
+                }
             }
         });
     }

@@ -3,6 +3,7 @@
 
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
+use bevy::asset::AssetPlugin;
 
 mod cards;
 mod deck;
@@ -15,6 +16,7 @@ mod consumables;
 mod audio;
 mod localization;
 mod save;
+mod textures;
 mod ui;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -31,14 +33,21 @@ pub enum GameState {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Balatro".to_string(),
-                resolution: WindowResolution::new(1280, 720),
+        .add_plugins(DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Balatro".to_string(),
+                    resolution: WindowResolution::new(1280, 720),
+                    ..default()
+                }),
                 ..default()
-            }),
-            ..default()
-        }))
+            })
+            // Load assets from resources/ to match the original project structure
+            .set(AssetPlugin {
+                file_path: "resources".into(),
+                ..default()
+            })
+        )
         // States
         .init_state::<GameState>()
         // Resources
@@ -51,8 +60,10 @@ fn main() {
         // Plugins
         .add_plugins(audio::AudioPlugin)
         .add_plugins(ui::UiPlugin)
-        // Startup
+        // Startup systems
         .add_systems(Startup, setup)
+        // Load textures after the window is created so we can read the scale factor
+        .add_systems(PostStartup, textures::load_game_textures)
         .run();
 }
 

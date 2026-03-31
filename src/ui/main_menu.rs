@@ -2,6 +2,8 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use bevy::ui::widget::ImageNode;
+use crate::textures::GameTextures;
 
 #[derive(Component)]
 pub struct MainMenuRoot;
@@ -17,6 +19,7 @@ pub struct QuitButton;
 
 pub fn setup_main_menu(
     mut commands: Commands,
+    textures: Option<Res<GameTextures>>,
 ) {
     commands.spawn((
         Node {
@@ -31,12 +34,23 @@ pub fn setup_main_menu(
         BackgroundColor(Color::srgb(0.08, 0.08, 0.12)),
         MainMenuRoot,
     )).with_children(|parent| {
-        // Title
-        parent.spawn((
-            Text::new("BALATRO"),
-            TextFont { font_size: 80.0, ..default() },
-            TextColor(Color::srgb(0.9, 0.7, 0.1)),
-        ));
+        // Logo: use balatro.png if textures loaded, otherwise text fallback
+        if let Some(ref tex) = textures {
+            parent.spawn((
+                Node {
+                    width: Val::Px(333.0),
+                    height: Val::Px(216.0),
+                    ..default()
+                },
+                ImageNode::new(tex.balatro_logo.clone()),
+            ));
+        } else {
+            parent.spawn((
+                Text::new("BALATRO"),
+                TextFont { font_size: 80.0, ..default() },
+                TextColor(Color::srgb(0.9, 0.7, 0.1)),
+            ));
+        }
 
         parent.spawn((
             Text::new("A Poker Roguelite"),
