@@ -25,6 +25,7 @@ mod ui;
 pub enum GameState {
     #[default]
     MainMenu,
+    HelpScreen,
     BlindSelect,
     Playing,
     Scoring,

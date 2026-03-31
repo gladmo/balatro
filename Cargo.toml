@@ -13,6 +13,10 @@ rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# WASM-specific: use getrandom with js feature for rand's entropy source
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
 [profile.dev]
 opt-level = 1
 
@@ -22,3 +26,12 @@ opt-level = 3
 [profile.release]
 opt-level = 3
 lto = true
+
+# Optimized WASM release: minimize binary size
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

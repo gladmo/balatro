@@ -7,6 +7,7 @@ pub mod main_menu;
 pub mod game_ui;
 pub mod blind_select;
 pub mod shop_ui;
+pub mod help_screen;
 
 pub struct UiPlugin;
 
@@ -17,6 +18,10 @@ impl Plugin for UiPlugin {
             .add_systems(OnEnter(crate::GameState::MainMenu), main_menu::setup_main_menu)
             .add_systems(Update, main_menu::main_menu_buttons.run_if(in_state(crate::GameState::MainMenu)))
             .add_systems(OnExit(crate::GameState::MainMenu), cleanup_screen::<main_menu::MainMenuRoot>)
+            // Help screen
+            .add_systems(OnEnter(crate::GameState::HelpScreen), help_screen::setup_help_screen)
+            .add_systems(Update, help_screen::help_close_button.run_if(in_state(crate::GameState::HelpScreen)))
+            .add_systems(OnExit(crate::GameState::HelpScreen), cleanup_screen::<help_screen::HelpRoot>)
             // Blind select
             .add_systems(OnEnter(crate::GameState::BlindSelect), blind_select::setup_blind_select)
             .add_systems(Update, blind_select::blind_select_buttons.run_if(in_state(crate::GameState::BlindSelect)))
