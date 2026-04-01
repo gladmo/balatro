@@ -177,10 +177,15 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        // Chain these three systems so they run sequentially within the same
+        // Update schedule tick.  This is required because `animate_card_hover`
+        // and `animate_card_select` both access `&mut Node` on the same card
+        // entities (each card carries both `CardHoverAnim` and `CardSelectAnim`),
+        // which would otherwise cause a Bevy B0001 parallel-query conflict.
         app.add_systems(Update, (
             animate_card_hover,
             animate_card_select,
             animate_button_flash,
-        ));
+        ).chain());
     }
 }

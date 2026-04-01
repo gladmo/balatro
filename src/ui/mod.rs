@@ -31,7 +31,11 @@ impl Plugin for UiPlugin {
             .add_systems(Update, game_ui::game_buttons.run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_score_display.run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_hand_display.run_if(in_state(crate::GameState::Playing)))
-            .add_systems(Update, game_ui::card_selection_buttons.run_if(in_state(crate::GameState::Playing)))
+            // card_selection_buttons writes CardSelectAnim.selected_offset; animate_card_select
+            // (in AnimationPlugin) then reads+writes it.  Ordering them avoids the B0001 conflict.
+            .add_systems(Update, game_ui::card_selection_buttons
+                .before(crate::animation::animate_card_select)
+                .run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_card_tooltip.run_if(in_state(crate::GameState::Playing)))
             .add_systems(OnExit(crate::GameState::Playing), cleanup_screen::<game_ui::GameUiRoot>)
             // Shop
