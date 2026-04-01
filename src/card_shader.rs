@@ -81,7 +81,9 @@ pub struct CardShaderPlugin;
 
 impl Plugin for CardShaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (animate_holo_effect, animate_foil_effect));
+        // Chain these two systems so they run sequentially: both write &mut ImageNode
+        // and Bevy would flag them as a B0001 conflict if run in parallel.
+        app.add_systems(Update, (animate_holo_effect, animate_foil_effect).chain());
         // Re-attach edition effects whenever the Playing state is entered
         app.add_systems(
             OnEnter(crate::GameState::Playing),

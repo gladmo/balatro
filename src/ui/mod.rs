@@ -28,7 +28,11 @@ impl Plugin for UiPlugin {
             .add_systems(OnExit(crate::GameState::BlindSelect), cleanup_screen::<blind_select::BlindSelectRoot>)
             // Playing
             .add_systems(OnEnter(crate::GameState::Playing), game_ui::setup_game_ui)
-            .add_systems(Update, game_ui::game_buttons.run_if(in_state(crate::GameState::Playing)))
+            // game_buttons writes &mut BackgroundColor + &mut ButtonFlash (same types as
+            // animate_button_flash in AnimationPlugin) → must run before the animation chain.
+            .add_systems(Update, game_ui::game_buttons
+                .before(crate::animation::animate_button_flash)
+                .run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_score_display.run_if(in_state(crate::GameState::Playing)))
             .add_systems(Update, game_ui::update_hand_display.run_if(in_state(crate::GameState::Playing)))
             // card_selection_buttons writes CardSelectAnim.selected_offset; animate_card_select
@@ -36,7 +40,12 @@ impl Plugin for UiPlugin {
             .add_systems(Update, game_ui::card_selection_buttons
                 .before(crate::animation::animate_card_select)
                 .run_if(in_state(crate::GameState::Playing)))
-            .add_systems(Update, game_ui::update_card_tooltip.run_if(in_state(crate::GameState::Playing)))
+            // update_card_tooltip writes &mut Node (With<CardTooltip>); the animation chain
+            // (animate_card_hover, animate_card_select) also writes &mut Node.  Run tooltip
+            // update first so the animation chain can see the final state in the same tick.
+            .add_systems(Update, game_ui::update_card_tooltip
+                .before(crate::animation::animate_card_hover)
+                .run_if(in_state(crate::GameState::Playing)))
             .add_systems(OnExit(crate::GameState::Playing), cleanup_screen::<game_ui::GameUiRoot>)
             // Shop
             .add_systems(OnEnter(crate::GameState::Shop), shop_ui::setup_shop)
