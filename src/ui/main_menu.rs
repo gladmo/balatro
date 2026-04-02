@@ -31,7 +31,7 @@ pub fn setup_main_menu(
     fonts: Res<crate::ui::FontAssets>,
 ) {
     let lang = loc.language();
-    let lang_label = match loc.language() {
+    let lang_label = match lang {
         Language::English => "中文",
         Language::Chinese => "English",
     };
