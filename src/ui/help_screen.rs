@@ -51,7 +51,9 @@ const SEAL_TABLE: &[(&str, &str)] = &[
 pub fn setup_help_screen(
     mut commands: Commands,
     loc: Res<Localization>,
+    fonts: Res<crate::ui::FontAssets>,
 ) {
+    let lang = loc.language();
     let header_color = Color::srgb(0.95, 0.85, 0.2);
     let label_color  = Color::srgb(0.85, 0.85, 0.85);
     let value_color  = Color::WHITE;
@@ -86,7 +88,7 @@ pub fn setup_help_screen(
         // Title
         root.spawn((
             Text::new(title_str),
-            TextFont { font_size: 40.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 40.0, ..default() },
             TextColor(header_color),
         ));
 
@@ -103,17 +105,17 @@ pub fn setup_help_screen(
         )).with_children(|section| {
             section.spawn((
                 Text::new(scoring_str),
-                TextFont { font_size: 20.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                 TextColor(header_color),
             ));
             section.spawn((
                 Text::new("Score = (Base Chips + Card Chips) × (Base Mult + Bonuses)"),
-                TextFont { font_size: 15.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 15.0, ..default() },
                 TextColor(value_color),
             ));
             section.spawn((
                 Text::new("Each played card adds its chip value to the chip pool.\nJokers can add flat Chips, flat Mult, or ×Mult multipliers."),
-                TextFont { font_size: 13.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() },
                 TextColor(label_color),
             ));
         });
@@ -131,7 +133,7 @@ pub fn setup_help_screen(
         )).with_children(|section| {
             section.spawn((
                 Text::new("Hand Types  (Base Chips × Base Mult)"),
-                TextFont { font_size: 19.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() },
                 TextColor(header_color),
             ));
             // Header row
@@ -145,9 +147,9 @@ pub fn setup_help_screen(
                 },
                 BorderColor::from(Color::srgb(0.3, 0.3, 0.5)),
             )).with_children(|row| {
-                row.spawn((Text::new("Hand"), TextFont { font_size: 13.0, ..default() }, TextColor(label_color), Node { width: Val::Percent(60.0), ..default() }));
-                row.spawn((Text::new("Chips"), TextFont { font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
-                row.spawn((Text::new("Mult"),  TextFont { font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
+                row.spawn((Text::new("Hand"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(label_color), Node { width: Val::Percent(60.0), ..default() }));
+                row.spawn((Text::new("Chips"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
+                row.spawn((Text::new("Mult"),  TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
             });
             // Data rows
             for ((_, chips, mult), name) in HAND_TABLE.iter().zip(hand_names.drain(..)) {
@@ -156,9 +158,9 @@ pub fn setup_help_screen(
                 section.spawn((
                     Node { width: Val::Percent(100.0), flex_direction: FlexDirection::Row, justify_content: JustifyContent::SpaceBetween, ..default() },
                 )).with_children(|row| {
-                    row.spawn((Text::new(name), TextFont { font_size: 13.0, ..default() }, TextColor(value_color), Node { width: Val::Percent(60.0), ..default() }));
-                    row.spawn((Text::new(chips_str), TextFont { font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
-                    row.spawn((Text::new(mult_str),  TextFont { font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
+                    row.spawn((Text::new(name), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color), Node { width: Val::Percent(60.0), ..default() }));
+                    row.spawn((Text::new(chips_str), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
+                    row.spawn((Text::new(mult_str),  TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
                 });
             }
         });
@@ -174,10 +176,10 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Editions"), TextFont { font_size: 19.0, ..default() }, TextColor(header_color)));
+            section.spawn((Text::new("Card Editions"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
             for (name, effect) in EDITION_TABLE {
                 let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font_size: 13.0, ..default() }, TextColor(value_color)));
+                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 
@@ -192,10 +194,10 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Enhancements"), TextFont { font_size: 19.0, ..default() }, TextColor(header_color)));
+            section.spawn((Text::new("Card Enhancements"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
             for (name, effect) in ENHANCEMENT_TABLE {
                 let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font_size: 13.0, ..default() }, TextColor(value_color)));
+                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 
@@ -210,10 +212,10 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Seals"), TextFont { font_size: 19.0, ..default() }, TextColor(header_color)));
+            section.spawn((Text::new("Card Seals"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
             for (name, effect) in SEAL_TABLE {
                 let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font_size: 13.0, ..default() }, TextColor(value_color)));
+                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 
@@ -234,7 +236,7 @@ pub fn setup_help_screen(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new(close_str),
-                TextFont { font_size: 22.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });

@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 use bevy::prelude::*;
+use crate::localization::{Language, Localization};
 
 pub mod main_menu;
 pub mod game_ui;
@@ -9,11 +10,36 @@ pub mod blind_select;
 pub mod shop_ui;
 pub mod help_screen;
 
+/// Bevy font handles for the supported UI languages.
+#[derive(Resource, Default)]
+pub struct FontAssets {
+    pub english: Handle<Font>,
+    pub chinese: Handle<Font>,
+}
+
+/// Returns the correct font handle for the currently active language.
+pub fn current_font(lang: Language, fonts: &FontAssets) -> Handle<Font> {
+    match lang {
+        Language::Chinese => fonts.chinese.clone(),
+        Language::English => fonts.english.clone(),
+    }
+}
+
+/// PostStartup system — loads font assets into `FontAssets` resource.
+pub fn load_fonts(
+    mut fonts: ResMut<FontAssets>,
+    asset_server: Res<AssetServer>,
+) {
+    fonts.english = asset_server.load("fonts/m6x11plus.ttf");
+    fonts.chinese = asset_server.load("fonts/SourceHanSansSC-Regular.ttf");
+}
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app
+        app.init_resource::<FontAssets>()
+           .add_systems(PostStartup, load_fonts)
             // Main menu
             .add_systems(OnEnter(crate::GameState::MainMenu), main_menu::setup_main_menu)
             .add_systems(Update, main_menu::main_menu_buttons.run_if(in_state(crate::GameState::MainMenu)))
@@ -85,7 +111,10 @@ pub struct GameOverMenuButton;
 pub fn setup_game_over(
     mut commands: Commands,
     game_data: Res<crate::game_data::GameData>,
+    fonts: Res<FontAssets>,
+    loc: Res<Localization>,
 ) {
+    let lang = loc.language();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -101,21 +130,21 @@ pub fn setup_game_over(
     )).with_children(|parent| {
         parent.spawn((
             Text::new("GAME OVER"),
-            TextFont { font_size: 72.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 72.0, ..default() },
             TextColor(Color::srgb(0.9, 0.2, 0.2)),
         ));
 
         let score_text = format!("Score: {}", game_data.run_score);
         parent.spawn((
             Text::new(score_text),
-            TextFont { font_size: 36.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 36.0, ..default() },
             TextColor(Color::WHITE),
         ));
 
         let ante_text = format!("Reached Ante {}", game_data.ante);
         parent.spawn((
             Text::new(ante_text),
-            TextFont { font_size: 24.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
             TextColor(Color::srgb(0.8, 0.8, 0.8)),
         ));
 
@@ -133,7 +162,7 @@ pub fn setup_game_over(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new("Play Again"),
-                TextFont { font_size: 24.0, ..default() },
+                TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });
@@ -152,7 +181,7 @@ pub fn setup_game_over(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new("Main Menu"),
-                TextFont { font_size: 24.0, ..default() },
+                TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });
@@ -203,7 +232,10 @@ pub struct VictoryMenuButton;
 pub fn setup_victory(
     mut commands: Commands,
     game_data: Res<crate::game_data::GameData>,
+    fonts: Res<FontAssets>,
+    loc: Res<Localization>,
 ) {
+    let lang = loc.language();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -219,20 +251,20 @@ pub fn setup_victory(
     )).with_children(|parent| {
         parent.spawn((
             Text::new("VICTORY!"),
-            TextFont { font_size: 72.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 72.0, ..default() },
             TextColor(Color::srgb(1.0, 0.9, 0.1)),
         ));
 
         parent.spawn((
             Text::new("You beat all 8 antes!"),
-            TextFont { font_size: 36.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 36.0, ..default() },
             TextColor(Color::WHITE),
         ));
 
         let score_text = format!("Final Score: {}", game_data.run_score);
         parent.spawn((
             Text::new(score_text),
-            TextFont { font_size: 28.0, ..default() },
+            TextFont { font: current_font(lang, &fonts), font_size: 28.0, ..default() },
             TextColor(Color::srgb(0.9, 0.9, 0.9)),
         ));
 
@@ -250,7 +282,7 @@ pub fn setup_victory(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new("Main Menu"),
-                TextFont { font_size: 24.0, ..default() },
+                TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });

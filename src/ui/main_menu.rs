@@ -28,7 +28,9 @@ pub fn setup_main_menu(
     mut commands: Commands,
     textures: Option<Res<GameTextures>>,
     loc: Res<Localization>,
+    fonts: Res<crate::ui::FontAssets>,
 ) {
+    let lang = loc.language();
     let lang_label = match loc.language() {
         Language::English => "中文",
         Language::Chinese => "English",
@@ -60,14 +62,14 @@ pub fn setup_main_menu(
         } else {
             parent.spawn((
                 Text::new(loc.get("menu.title")),
-                TextFont { font_size: 80.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 80.0, ..default() },
                 TextColor(Color::srgb(0.9, 0.7, 0.1)),
             ));
         }
 
         parent.spawn((
             Text::new("A Poker Roguelite"),
-            TextFont { font_size: 22.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
             TextColor(Color::srgb(0.7, 0.7, 0.7)),
         ));
 
@@ -90,7 +92,7 @@ pub fn setup_main_menu(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new(loc.get("menu.new_run")),
-                TextFont { font_size: 26.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 26.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });
@@ -112,7 +114,7 @@ pub fn setup_main_menu(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new(loc.get("menu.help")),
-                TextFont { font_size: 22.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });
@@ -136,7 +138,7 @@ pub fn setup_main_menu(
             let label = format!("{} / {}", lang_label, loc.get("menu.language"));
             btn.spawn((
                 Text::new(label),
-                TextFont { font_size: 18.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                 TextColor(Color::srgb(0.9, 0.85, 1.0)),
             ));
         });
@@ -158,7 +160,7 @@ pub fn setup_main_menu(
         )).with_children(|btn| {
             btn.spawn((
                 Text::new(loc.get("menu.quit")),
-                TextFont { font_size: 22.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                 TextColor(Color::WHITE),
             ));
         });

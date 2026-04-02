@@ -35,7 +35,10 @@ pub fn setup_shop(
     game_data: Res<GameData>,
     jokers: Res<OwnedJokers>,
     textures: Option<Res<GameTextures>>,
+    fonts: Res<crate::ui::FontAssets>,
+    loc: Res<crate::localization::Localization>,
 ) {
+    let lang = loc.language();
     // Generate shop items
     let mut rng = rand::thread_rng();
     shop.generate(&mut rng, jokers.len(), game_data.joker_slots as usize);
@@ -119,7 +122,7 @@ pub fn setup_shop(
         )).with_children(|title_row| {
             title_row.spawn((
                 Text::new("SHOP"),
-                TextFont { font_size: 48.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 48.0, ..default() },
                 TextColor(Color::srgb(0.9, 0.8, 0.2)),
             ));
 
@@ -127,7 +130,7 @@ pub fn setup_shop(
                 money, reward, interest);
             title_row.spawn((
                 Text::new(info_text),
-                TextFont { font_size: 18.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
             ));
         });
@@ -137,14 +140,14 @@ pub fn setup_shop(
             blind_name, reward, interest);
         root.spawn((
             Text::new(beat_text),
-            TextFont { font_size: 18.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
             TextColor(Color::srgb(0.6, 0.9, 0.6)),
         ));
 
         // Shop items
         root.spawn((
             Text::new("For Sale:"),
-            TextFont { font_size: 24.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 24.0, ..default() },
             TextColor(Color::srgb(0.8, 0.8, 0.8)),
         ));
 
@@ -202,12 +205,12 @@ pub fn setup_shop(
                     } else {
                         item_card.spawn((
                             Text::new(item.name.clone()),
-                            TextFont { font_size: 14.0, ..default() },
+                            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 14.0, ..default() },
                             TextColor(Color::WHITE),
                         ));
                         item_card.spawn((
                             Text::new(item.desc.clone()),
-                            TextFont { font_size: 11.0, ..default() },
+                            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 11.0, ..default() },
                             TextColor(Color::srgb(0.7, 0.8, 0.9)),
                         ));
                     }
@@ -215,7 +218,7 @@ pub fn setup_shop(
                     let price_text = format!("${}", item.cost);
                     item_card.spawn((
                         Text::new(price_text),
-                        TextFont { font_size: 18.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                         TextColor(if can_afford { Color::srgb(0.9, 0.8, 0.1) } else { Color::srgb(0.6, 0.3, 0.3) }),
                     ));
 
@@ -234,7 +237,7 @@ pub fn setup_shop(
                         )).with_children(|btn| {
                             btn.spawn((
                                 Text::new("Buy"),
-                                TextFont { font_size: 16.0, ..default() },
+                                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 16.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
                         });
@@ -247,7 +250,7 @@ pub fn setup_shop(
         if !joker_data.is_empty() {
             root.spawn((
                 Text::new("Your Jokers (click to sell):"),
-                TextFont { font_size: 22.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                 TextColor(Color::srgb(0.8, 0.7, 1.0)),
             ));
 
@@ -284,7 +287,7 @@ pub fn setup_shop(
                         } else {
                             jcard.spawn((
                                 Text::new(name.clone()),
-                                TextFont { font_size: 12.0, ..default() },
+                                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 12.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
                         }
@@ -303,7 +306,7 @@ pub fn setup_shop(
                         )).with_children(|btn| {
                             btn.spawn((
                                 Text::new(format!("Sell ${}", sell_val)),
-                                TextFont { font_size: 13.0, ..default() },
+                                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
                         });
@@ -338,7 +341,7 @@ pub fn setup_shop(
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new(format!("Reroll (${reroll_cost})")),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
             });
@@ -359,7 +362,7 @@ pub fn setup_shop(
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new("Next Round"),
-                    TextFont { font_size: 20.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
             });

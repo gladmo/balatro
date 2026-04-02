@@ -58,7 +58,10 @@ pub fn setup_game_ui(
     selected: Res<SelectedCards>,
     jokers: Res<crate::jokers::OwnedJokers>,
     textures: Option<Res<GameTextures>>,
+    fonts: Res<crate::ui::FontAssets>,
+    loc: Res<crate::localization::Localization>,
 ) {
+    let lang = loc.language();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -94,13 +97,13 @@ pub fn setup_game_ui(
                 let ante_text = format!("Ante {} / Round {}", game_data.ante, game_data.round);
                 left.spawn((
                     Text::new(ante_text),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 0.8)),
                 ));
 
                 left.spawn((
                     Text::new(game_data.blind_name()),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.7, 0.2)),
                 ));
             });
@@ -116,13 +119,13 @@ pub fn setup_game_ui(
                 let score_text = format!("{} / {}", game_data.score, game_data.blind_target);
                 center.spawn((
                     Text::new(score_text),
-                    TextFont { font_size: 26.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 26.0, ..default() },
                     TextColor(Color::WHITE),
                     ScoreDisplay,
                 ));
                 center.spawn((
                     Text::new("Score / Target"),
-                    TextFont { font_size: 14.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 14.0, ..default() },
                     TextColor(Color::srgb(0.6, 0.6, 0.6)),
                 ));
             });
@@ -139,7 +142,7 @@ pub fn setup_game_ui(
                 let money_text = format!("${}", game_data.money);
                 right.spawn((
                     Text::new(money_text),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.1)),
                     MoneyDisplay,
                 ));
@@ -147,7 +150,7 @@ pub fn setup_game_ui(
                 let hands_text = format!("Hands: {}", game_data.hands_remaining);
                 right.spawn((
                     Text::new(hands_text),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.4, 0.8, 0.4)),
                     HandsDisplay,
                 ));
@@ -155,7 +158,7 @@ pub fn setup_game_ui(
                 let discards_text = format!("Discards: {}", game_data.discards_remaining);
                 right.spawn((
                     Text::new(discards_text),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.5, 0.3)),
                     DiscardsDisplay,
                 ));
@@ -208,7 +211,7 @@ pub fn setup_game_ui(
                         )).with_children(|j| {
                             j.spawn((
                                 Text::new(joker.name().to_string()),
-                                TextFont { font_size: 10.0, ..default() },
+                                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 10.0, ..default() },
                                 TextColor(Color::srgb(0.9, 0.8, 1.0)),
                             ));
                         });
@@ -229,7 +232,7 @@ pub fn setup_game_ui(
         )).with_children(|ht| {
             ht.spawn((
                 Text::new("Select cards to play"),
-                TextFont { font_size: 20.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                 TextColor(Color::srgb(0.7, 0.9, 0.7)),
                 HandTypeDisplay,
             ));
@@ -316,7 +319,7 @@ pub fn setup_game_ui(
                     )).with_children(|card_btn| {
                         card_btn.spawn((
                             Text::new(card_label),
-                            TextFont { font_size: 20.0, ..default() },
+                            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                             TextColor(suit_color),
                         ));
                     });
@@ -357,7 +360,7 @@ pub fn setup_game_ui(
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new("Play Hand"),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
             });
@@ -381,7 +384,7 @@ pub fn setup_game_ui(
             )).with_children(|btn| {
                 btn.spawn((
                     Text::new("Discard"),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
             });
@@ -407,7 +410,7 @@ pub fn setup_game_ui(
         )).with_children(|tip| {
             tip.spawn((
                 Text::new(""),
-                TextFont { font_size: 14.0, ..default() },
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 14.0, ..default() },
                 TextColor(Color::WHITE),
                 CardTooltipText,
             ));
@@ -448,7 +451,10 @@ pub fn update_hand_display(
     container_query: Query<Entity, With<HandCardsContainer>>,
     card_button_query: Query<(Entity, &HandCardButton)>,
     textures: Option<Res<GameTextures>>,
+    fonts: Res<crate::ui::FontAssets>,
+    loc: Res<crate::localization::Localization>,
 ) {
+    let lang = loc.language();
     if !hand.is_changed() && !selected.is_changed() {
         return;
     }
@@ -529,7 +535,7 @@ pub fn update_hand_display(
                     )).with_children(|card_btn| {
                         card_btn.spawn((
                             Text::new(card_label),
-                            TextFont { font_size: 20.0, ..default() },
+                            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                             TextColor(suit_color),
                         ));
                     });

@@ -25,7 +25,10 @@ pub struct SkipBigBlindButton;
 pub fn setup_blind_select(
     mut commands: Commands,
     game_data: Res<GameData>,
+    fonts: Res<crate::ui::FontAssets>,
+    loc: Res<crate::localization::Localization>,
 ) {
+    let lang = loc.language();
     let ante = game_data.ante;
     let small_target = game_data.blind_target_for(ante, 1);
     let big_target = game_data.blind_target_for(ante, 2);
@@ -48,7 +51,7 @@ pub fn setup_blind_select(
         let title = format!("Select Blind — Ante {}", ante);
         parent.spawn((
             Text::new(title),
-            TextFont { font_size: 40.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 40.0, ..default() },
             TextColor(Color::srgb(0.9, 0.85, 0.3)),
         ));
 
@@ -80,17 +83,17 @@ pub fn setup_blind_select(
             )).with_children(|card| {
                 card.spawn((
                     Text::new("Small Blind"),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
                     Text::new(format!("Target: {}", small_target)),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
                     Text::new("Reward: $3"),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
                 card.spawn((
@@ -107,7 +110,7 @@ pub fn setup_blind_select(
                 )).with_children(|btn| {
                     btn.spawn((
                         Text::new("Play"),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
                 });
@@ -125,7 +128,7 @@ pub fn setup_blind_select(
                 )).with_children(|btn| {
                     btn.spawn((
                         Text::new("Skip"),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
                 });
@@ -149,17 +152,17 @@ pub fn setup_blind_select(
             )).with_children(|card| {
                 card.spawn((
                     Text::new("Big Blind"),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
                     Text::new(format!("Target: {}", big_target)),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
                     Text::new("Reward: $4"),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
                 card.spawn((
@@ -176,7 +179,7 @@ pub fn setup_blind_select(
                 )).with_children(|btn| {
                     btn.spawn((
                         Text::new("Play"),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
                 });
@@ -194,7 +197,7 @@ pub fn setup_blind_select(
                 )).with_children(|btn| {
                     btn.spawn((
                         Text::new("Skip"),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
                 });
@@ -219,22 +222,22 @@ pub fn setup_blind_select(
             )).with_children(|card| {
                 card.spawn((
                     Text::new("BOSS BLIND"),
-                    TextFont { font_size: 16.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 16.0, ..default() },
                     TextColor(Color::srgb(1.0, 0.4, 0.4)),
                 ));
                 card.spawn((
                     Text::new(boss_label),
-                    TextFont { font_size: 22.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
                     Text::new(format!("Target: {}", boss_target)),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
                     Text::new("Reward: $5"),
-                    TextFont { font_size: 18.0, ..default() },
+                    TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
                 card.spawn((
@@ -251,7 +254,7 @@ pub fn setup_blind_select(
                 )).with_children(|btn| {
                     btn.spawn((
                         Text::new("Face Boss"),
-                        TextFont { font_size: 20.0, ..default() },
+                        TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
                 });
@@ -260,7 +263,7 @@ pub fn setup_blind_select(
 
         parent.spawn((
             Text::new("Skip Small/Big Blind to proceed directly to the next blind"),
-            TextFont { font_size: 18.0, ..default() },
+            TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
             TextColor(Color::srgb(0.6, 0.6, 0.6)),
         ));
     });
