@@ -85,6 +85,29 @@ pub fn setup_help_screen(
         HelpRoot,
     )).with_children(|root| {
 
+        // ── Top close button (always visible on entry) ───────────────────────
+        root.spawn((
+            Button,
+            Node {
+                width: Val::Px(160.0),
+                height: Val::Px(44.0),
+                align_self: AlignSelf::FlexEnd,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                border: UiRect::all(Val::Px(2.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.5, 0.15, 0.15)),
+            BorderColor::from(Color::srgb(0.9, 0.3, 0.3)),
+            HelpCloseButton,
+        )).with_children(|btn| {
+            btn.spawn((
+                Text::new(close_str.clone()),
+                TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
+                TextColor(Color::WHITE),
+            ));
+        });
+
         // Title
         root.spawn((
             Text::new(title_str),

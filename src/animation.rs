@@ -111,7 +111,8 @@ pub fn animate_card_select(
         }
 
         // `Node.top` is owned by CardHoverAnim; use margin.bottom for selection lift.
-        node.margin.bottom = Val::Px(-anim.current);
+        // In a flex-row with align_items: FlexEnd, positive margin.bottom lifts the card UP.
+        node.margin.bottom = Val::Px(anim.current);
     }
 }
 
