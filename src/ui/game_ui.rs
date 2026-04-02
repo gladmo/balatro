@@ -606,8 +606,10 @@ pub fn update_card_tooltip(
 
 /// Handles Play/Discard button presses with SFX and button flash effects.
 pub fn game_buttons(
-    mut play_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<PlayHandButton>)>,
-    mut discard_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<DiscardButton>)>,
+    // Explicit Without<> on each query makes the disjointness visible to Bevy's static checker
+    // and prevents the B0001 conflict on &mut BackgroundColor / &mut ButtonFlash.
+    mut play_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<PlayHandButton>, Without<DiscardButton>)>,
+    mut discard_query: Query<(&Interaction, &mut BackgroundColor, &mut ButtonFlash), (Changed<Interaction>, With<DiscardButton>, Without<PlayHandButton>)>,
     mut game_data: ResMut<GameData>,
     mut deck: ResMut<Deck>,
     mut hand: ResMut<Hand>,
