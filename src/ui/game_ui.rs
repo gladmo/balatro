@@ -62,6 +62,13 @@ pub fn setup_game_ui(
     loc: Res<crate::localization::Localization>,
 ) {
     let lang = loc.language();
+    // Pre-collect localized strings before spawning
+    let score_vs_target_str = loc.get("ui.score_vs_target").to_string();
+    let hands_label = loc.get("ui.hands").to_string();
+    let discards_label = loc.get("ui.discards").to_string();
+    let select_cards_str = loc.get("ui.select_cards").to_string();
+    let play_hand_str = loc.get("ui.play_hand").to_string();
+    let discard_str = loc.get("ui.discard").to_string();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -124,7 +131,7 @@ pub fn setup_game_ui(
                     ScoreDisplay,
                 ));
                 center.spawn((
-                    Text::new("Score / Target"),
+                    Text::new(score_vs_target_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 14.0, ..default() },
                     TextColor(Color::srgb(0.6, 0.6, 0.6)),
                 ));
@@ -147,7 +154,7 @@ pub fn setup_game_ui(
                     MoneyDisplay,
                 ));
 
-                let hands_text = format!("Hands: {}", game_data.hands_remaining);
+                let hands_text = format!("{}: {}", hands_label, game_data.hands_remaining);
                 right.spawn((
                     Text::new(hands_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
@@ -155,7 +162,7 @@ pub fn setup_game_ui(
                     HandsDisplay,
                 ));
 
-                let discards_text = format!("Discards: {}", game_data.discards_remaining);
+                let discards_text = format!("{}: {}", discards_label, game_data.discards_remaining);
                 right.spawn((
                     Text::new(discards_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
@@ -231,7 +238,7 @@ pub fn setup_game_ui(
             },
         )).with_children(|ht| {
             ht.spawn((
-                Text::new("Select cards to play"),
+                Text::new(select_cards_str),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                 TextColor(Color::srgb(0.7, 0.9, 0.7)),
                 HandTypeDisplay,
@@ -359,7 +366,7 @@ pub fn setup_game_ui(
                 ButtonFlash::new(play_flash, play_base),
             )).with_children(|btn| {
                 btn.spawn((
-                    Text::new("Play Hand"),
+                    Text::new(play_hand_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
@@ -383,7 +390,7 @@ pub fn setup_game_ui(
                 ButtonFlash::new(disc_flash, disc_base),
             )).with_children(|btn| {
                 btn.spawn((
-                    Text::new("Discard"),
+                    Text::new(discard_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
@@ -420,6 +427,7 @@ pub fn setup_game_ui(
 
 pub fn update_score_display(
     game_data: Res<GameData>,
+    loc: Res<crate::localization::Localization>,
     mut score_query: Query<&mut Text, With<ScoreDisplay>>,
     mut hands_query: Query<&mut Text, (With<HandsDisplay>, Without<ScoreDisplay>)>,
     mut discards_query: Query<&mut Text, (With<DiscardsDisplay>, Without<ScoreDisplay>, Without<HandsDisplay>)>,
@@ -433,10 +441,10 @@ pub fn update_score_display(
         *text = Text::new(format!("{} / {}", game_data.score, game_data.blind_target));
     }
     for mut text in &mut hands_query {
-        *text = Text::new(format!("Hands: {}", game_data.hands_remaining));
+        *text = Text::new(format!("{}: {}", loc.get("ui.hands"), game_data.hands_remaining));
     }
     for mut text in &mut discards_query {
-        *text = Text::new(format!("Discards: {}", game_data.discards_remaining));
+        *text = Text::new(format!("{}: {}", loc.get("ui.discards"), game_data.discards_remaining));
     }
     for mut text in &mut money_query {
         *text = Text::new(format!("${}", game_data.money));
@@ -470,7 +478,7 @@ pub fn update_hand_display(
                 &selected_cards.iter().map(|c| (*c).clone()).collect::<Vec<_>>()
             );
             for mut text in &mut hand_type_query {
-                *text = Text::new(eval.hand_type.name().to_string());
+                *text = Text::new(loc.get(eval.hand_type.loc_key()).to_string());
             }
         }
     }

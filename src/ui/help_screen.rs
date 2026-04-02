@@ -23,29 +23,29 @@ const HAND_TABLE: &[(&str, u32, u32)] = &[
     ("hand.flush_five",      160,  16),
 ];
 
-const EDITION_TABLE: &[(&str, &str)] = &[
-    ("Foil",         "+50 Chips"),
-    ("Holographic",  "+10 Mult"),
-    ("Polychrome",   "×1.5 Mult"),
-    ("Negative",     "+1 Joker slot"),
+const EDITION_KEYS: &[&str] = &[
+    "help.edition.foil",
+    "help.edition.holo",
+    "help.edition.poly",
+    "help.edition.neg",
 ];
 
-const ENHANCEMENT_TABLE: &[(&str, &str)] = &[
-    ("Bonus Card",    "+30 Chips"),
-    ("Mult Card",     "+4 Mult"),
-    ("Wild Card",     "Any suit"),
-    ("Glass Card",    "×2 Mult (1-in-4 breaks)"),
-    ("Steel Card",    "×1.5 Mult while in hand"),
-    ("Stone Card",    "+50 Chips, no suit/rank"),
-    ("Gold Card",     "+3$ at end of round"),
-    ("Lucky Card",    "1-in-5: +20 Mult / 1-in-15: +20$"),
+const ENHANCEMENT_KEYS: &[&str] = &[
+    "help.enhance.bonus",
+    "help.enhance.mult",
+    "help.enhance.wild",
+    "help.enhance.glass",
+    "help.enhance.steel",
+    "help.enhance.stone",
+    "help.enhance.gold",
+    "help.enhance.lucky",
 ];
 
-const SEAL_TABLE: &[(&str, &str)] = &[
-    ("Gold Seal",   "+3$ when scored"),
-    ("Red Seal",    "Retrigger card once"),
-    ("Blue Seal",   "Create Planet card after hand"),
-    ("Purple Seal", "Create Tarot card when discarded"),
+const SEAL_KEYS: &[&str] = &[
+    "help.seal.gold",
+    "help.seal.red",
+    "help.seal.blue",
+    "help.seal.purple",
 ];
 
 pub fn setup_help_screen(
@@ -62,12 +62,30 @@ pub fn setup_help_screen(
     let mult_color   = Color::srgb(1.0, 0.4, 0.4);
 
     // Collect all strings before spawning (avoid borrow through commands)
-    let title_str   = loc.get("help.title").to_string();
-    let scoring_str = loc.get("help.scoring").to_string();
-    let close_str   = loc.get("help.close").to_string();
+    let title_str        = loc.get("help.title").to_string();
+    let scoring_str      = loc.get("help.scoring").to_string();
+    let formula_str      = loc.get("help.formula").to_string();
+    let formula_note_str = loc.get("help.formula_note").to_string();
+    let hand_types_title = loc.get("help.hand_types_title").to_string();
+    let col_hand_str     = loc.get("help.col_hand").to_string();
+    let col_chips_str    = loc.get("help.col_chips").to_string();
+    let col_mult_str     = loc.get("help.col_mult").to_string();
+    let editions_title   = loc.get("help.editions_title").to_string();
+    let enhancements_title = loc.get("help.enhancements_title").to_string();
+    let seals_title      = loc.get("help.seals_title").to_string();
+    let close_str        = loc.get("help.close").to_string();
 
-    let mut hand_names: Vec<String> = HAND_TABLE.iter()
+    let hand_names: Vec<String> = HAND_TABLE.iter()
         .map(|(k, _, _)| loc.get(k).to_string())
+        .collect();
+    let edition_rows: Vec<String> = EDITION_KEYS.iter()
+        .map(|k| loc.get(k).to_string())
+        .collect();
+    let enhancement_rows: Vec<String> = ENHANCEMENT_KEYS.iter()
+        .map(|k| loc.get(k).to_string())
+        .collect();
+    let seal_rows: Vec<String> = SEAL_KEYS.iter()
+        .map(|k| loc.get(k).to_string())
         .collect();
 
     commands.spawn((
@@ -132,12 +150,12 @@ pub fn setup_help_screen(
                 TextColor(header_color),
             ));
             section.spawn((
-                Text::new("Score = (Base Chips + Card Chips) × (Base Mult + Bonuses)"),
+                Text::new(formula_str),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 15.0, ..default() },
                 TextColor(value_color),
             ));
             section.spawn((
-                Text::new("Each played card adds its chip value to the chip pool.\nJokers can add flat Chips, flat Mult, or ×Mult multipliers."),
+                Text::new(formula_note_str),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() },
                 TextColor(label_color),
             ));
@@ -155,7 +173,7 @@ pub fn setup_help_screen(
             BackgroundColor(section_bg),
         )).with_children(|section| {
             section.spawn((
-                Text::new("Hand Types  (Base Chips × Base Mult)"),
+                Text::new(hand_types_title),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() },
                 TextColor(header_color),
             ));
@@ -170,18 +188,18 @@ pub fn setup_help_screen(
                 },
                 BorderColor::from(Color::srgb(0.3, 0.3, 0.5)),
             )).with_children(|row| {
-                row.spawn((Text::new("Hand"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(label_color), Node { width: Val::Percent(60.0), ..default() }));
-                row.spawn((Text::new("Chips"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
-                row.spawn((Text::new("Mult"),  TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
+                row.spawn((Text::new(col_hand_str), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(label_color), Node { width: Val::Percent(60.0), ..default() }));
+                row.spawn((Text::new(col_chips_str), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
+                row.spawn((Text::new(col_mult_str),  TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
             });
             // Data rows
-            for ((_, chips, mult), name) in HAND_TABLE.iter().zip(hand_names.drain(..)) {
+            for ((_, chips, mult), name) in HAND_TABLE.iter().zip(hand_names.iter()) {
                 let chips_str = chips.to_string();
                 let mult_str = mult.to_string();
                 section.spawn((
                     Node { width: Val::Percent(100.0), flex_direction: FlexDirection::Row, justify_content: JustifyContent::SpaceBetween, ..default() },
                 )).with_children(|row| {
-                    row.spawn((Text::new(name), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color), Node { width: Val::Percent(60.0), ..default() }));
+                    row.spawn((Text::new(name.clone()), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color), Node { width: Val::Percent(60.0), ..default() }));
                     row.spawn((Text::new(chips_str), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(chip_color), Node { width: Val::Percent(20.0), ..default() }));
                     row.spawn((Text::new(mult_str),  TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(mult_color), Node { width: Val::Percent(20.0), ..default() }));
                 });
@@ -199,10 +217,9 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Editions"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
-            for (name, effect) in EDITION_TABLE {
-                let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
+            section.spawn((Text::new(editions_title), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
+            for row_text in &edition_rows {
+                section.spawn((Text::new(row_text.clone()), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 
@@ -217,10 +234,9 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Enhancements"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
-            for (name, effect) in ENHANCEMENT_TABLE {
-                let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
+            section.spawn((Text::new(enhancements_title), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
+            for row_text in &enhancement_rows {
+                section.spawn((Text::new(row_text.clone()), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 
@@ -235,10 +251,9 @@ pub fn setup_help_screen(
             },
             BackgroundColor(section_bg),
         )).with_children(|section| {
-            section.spawn((Text::new("Card Seals"), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
-            for (name, effect) in SEAL_TABLE {
-                let row_text = format!("{:<18}→  {}", name, effect);
-                section.spawn((Text::new(row_text), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
+            section.spawn((Text::new(seals_title), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 19.0, ..default() }, TextColor(header_color)));
+            for row_text in &seal_rows {
+                section.spawn((Text::new(row_text.clone()), TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() }, TextColor(value_color)));
             }
         });
 

@@ -115,6 +115,12 @@ pub fn setup_game_over(
     loc: Res<Localization>,
 ) {
     let lang = loc.language();
+    // Pre-collect localized strings
+    let title_str = loc.get("game_over.title").to_string();
+    let score_label = loc.get("game_over.score").to_string();
+    let reached_ante_str = loc.get("game_over.reached_ante").to_string();
+    let play_again_str = loc.get("game_over.play_again").to_string();
+    let main_menu_str = loc.get("game_over.menu").to_string();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -129,19 +135,19 @@ pub fn setup_game_over(
         GameOverRoot,
     )).with_children(|parent| {
         parent.spawn((
-            Text::new("GAME OVER"),
+            Text::new(title_str),
             TextFont { font: current_font(lang, &fonts), font_size: 72.0, ..default() },
             TextColor(Color::srgb(0.9, 0.2, 0.2)),
         ));
 
-        let score_text = format!("Score: {}", game_data.run_score);
+        let score_text = format!("{}: {}", score_label, game_data.run_score);
         parent.spawn((
             Text::new(score_text),
             TextFont { font: current_font(lang, &fonts), font_size: 36.0, ..default() },
             TextColor(Color::WHITE),
         ));
 
-        let ante_text = format!("Reached Ante {}", game_data.ante);
+        let ante_text = format!("{} {}", reached_ante_str, game_data.ante);
         parent.spawn((
             Text::new(ante_text),
             TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
@@ -161,7 +167,7 @@ pub fn setup_game_over(
             GameOverPlayAgainButton,
         )).with_children(|btn| {
             btn.spawn((
-                Text::new("Play Again"),
+                Text::new(play_again_str),
                 TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));
@@ -180,7 +186,7 @@ pub fn setup_game_over(
             GameOverMenuButton,
         )).with_children(|btn| {
             btn.spawn((
-                Text::new("Main Menu"),
+                Text::new(main_menu_str),
                 TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));
@@ -236,6 +242,11 @@ pub fn setup_victory(
     loc: Res<Localization>,
 ) {
     let lang = loc.language();
+    // Pre-collect localized strings
+    let victory_title = loc.get("victory.title").to_string();
+    let victory_msg = loc.get("victory.message").to_string();
+    let score_label = loc.get("game_over.score").to_string();
+    let main_menu_str = loc.get("game_over.menu").to_string();
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -250,18 +261,18 @@ pub fn setup_victory(
         VictoryRoot,
     )).with_children(|parent| {
         parent.spawn((
-            Text::new("VICTORY!"),
+            Text::new(victory_title),
             TextFont { font: current_font(lang, &fonts), font_size: 72.0, ..default() },
             TextColor(Color::srgb(1.0, 0.9, 0.1)),
         ));
 
         parent.spawn((
-            Text::new("You beat all 8 antes!"),
+            Text::new(victory_msg),
             TextFont { font: current_font(lang, &fonts), font_size: 36.0, ..default() },
             TextColor(Color::WHITE),
         ));
 
-        let score_text = format!("Final Score: {}", game_data.run_score);
+        let score_text = format!("{}: {}", score_label, game_data.run_score);
         parent.spawn((
             Text::new(score_text),
             TextFont { font: current_font(lang, &fonts), font_size: 28.0, ..default() },
@@ -281,7 +292,7 @@ pub fn setup_victory(
             VictoryMenuButton,
         )).with_children(|btn| {
             btn.spawn((
-                Text::new("Main Menu"),
+                Text::new(main_menu_str),
                 TextFont { font: current_font(lang, &fonts), font_size: 24.0, ..default() },
                 TextColor(Color::WHITE),
             ));

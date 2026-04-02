@@ -68,7 +68,7 @@ pub fn setup_main_menu(
         }
 
         parent.spawn((
-            Text::new("A Poker Roguelite"),
+            Text::new(loc.get("menu.subtitle")),
             TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
             TextColor(Color::srgb(0.7, 0.7, 0.7)),
         ));

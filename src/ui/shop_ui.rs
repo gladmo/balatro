@@ -96,6 +96,23 @@ pub fn setup_shop(
         (j.name().to_string(), j.description().to_string(), j.sell_value, GameTextures::joker_sprite_index(j.id))
     }).collect();
 
+    // Pre-collect all localized strings before spawning (avoid borrow conflict with commands)
+    let shop_title = loc.get("shop.title").to_string();
+    let info_text = format!("{}: ${} | {}: ${} | {}: ${}",
+        loc.get("shop.money_label"), money,
+        loc.get("blind.reward"), reward,
+        loc.get("shop.interest_label"), interest);
+    let beat_text = format!("{} {} — {} ${} + ${} {}",
+        loc.get("shop.beat_blind"), blind_name,
+        loc.get("shop.earned"), reward, interest,
+        loc.get("shop.interest_label"));
+    let for_sale_str = loc.get("shop.for_sale").to_string();
+    let buy_str = loc.get("shop.buy").to_string();
+    let your_jokers_str = loc.get("shop.your_jokers").to_string();
+    let sell_btn_str = loc.get("shop.sell_btn").to_string();
+    let reroll_str = format!("{} (${})", loc.get("shop.reroll_btn"), reroll_cost);
+    let continue_str = loc.get("shop.continue").to_string();
+
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -121,13 +138,11 @@ pub fn setup_shop(
             },
         )).with_children(|title_row| {
             title_row.spawn((
-                Text::new("SHOP"),
+                Text::new(shop_title),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 48.0, ..default() },
                 TextColor(Color::srgb(0.9, 0.8, 0.2)),
             ));
 
-            let info_text = format!("Money: ${} | Reward: ${} | Interest: ${}",
-                money, reward, interest);
             title_row.spawn((
                 Text::new(info_text),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
@@ -136,8 +151,6 @@ pub fn setup_shop(
         });
 
         // After beating blind text
-        let beat_text = format!("Beat {} — Earned ${} + ${} interest",
-            blind_name, reward, interest);
         root.spawn((
             Text::new(beat_text),
             TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
@@ -146,7 +159,7 @@ pub fn setup_shop(
 
         // Shop items
         root.spawn((
-            Text::new("For Sale:"),
+            Text::new(for_sale_str),
             TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 24.0, ..default() },
             TextColor(Color::srgb(0.8, 0.8, 0.8)),
         ));
@@ -236,7 +249,7 @@ pub fn setup_shop(
                             ShopBuyButton { index: i },
                         )).with_children(|btn| {
                             btn.spawn((
-                                Text::new("Buy"),
+                                Text::new(buy_str.clone()),
                                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 16.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
@@ -249,7 +262,7 @@ pub fn setup_shop(
         // Owned jokers section (sell)
         if !joker_data.is_empty() {
             root.spawn((
-                Text::new("Your Jokers (click to sell):"),
+                Text::new(your_jokers_str),
                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                 TextColor(Color::srgb(0.8, 0.7, 1.0)),
             ));
@@ -305,7 +318,7 @@ pub fn setup_shop(
                             ShopSellButton { index: i },
                         )).with_children(|btn| {
                             btn.spawn((
-                                Text::new(format!("Sell ${}", sell_val)),
+                                Text::new(format!("{} ${}", sell_btn_str, sell_val)),
                                 TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 13.0, ..default() },
                                 TextColor(Color::WHITE),
                             ));
@@ -340,7 +353,7 @@ pub fn setup_shop(
                 ShopRerollButton,
             )).with_children(|btn| {
                 btn.spawn((
-                    Text::new(format!("Reroll (${reroll_cost})")),
+                    Text::new(reroll_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
@@ -361,7 +374,7 @@ pub fn setup_shop(
                 ShopContinueButton,
             )).with_children(|btn| {
                 btn.spawn((
-                    Text::new("Next Round"),
+                    Text::new(continue_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                     TextColor(Color::WHITE),
                 ));

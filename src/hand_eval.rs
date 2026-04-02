@@ -39,6 +39,23 @@ impl HandType {
         }
     }
 
+    pub fn loc_key(&self) -> &'static str {
+        match self {
+            HandType::HighCard        => "hand.high_card",
+            HandType::Pair            => "hand.pair",
+            HandType::TwoPair         => "hand.two_pair",
+            HandType::ThreeOfAKind    => "hand.three_of_a_kind",
+            HandType::Straight        => "hand.straight",
+            HandType::Flush           => "hand.flush",
+            HandType::FullHouse       => "hand.full_house",
+            HandType::FourOfAKind     => "hand.four_of_a_kind",
+            HandType::StraightFlush   => "hand.straight_flush",
+            HandType::FiveOfAKind     => "hand.five_of_a_kind",
+            HandType::FlushHouse      => "hand.flush_house",
+            HandType::FlushFive       => "hand.flush_five",
+        }
+    }
+
     pub fn base_chips(&self) -> u32 {
         match self {
             HandType::HighCard => 5,

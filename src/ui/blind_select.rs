@@ -35,6 +35,25 @@ pub fn setup_blind_select(
     let boss_target = game_data.blind_target_for(ante, 3);
     let boss_name = crate::game_data::BossBlind::from_index((ante as usize).wrapping_sub(1)).name().to_string();
 
+    // Pre-collect localized strings before spawning
+    let title = format!("{} — {} {}", loc.get("blind.select"), loc.get("ui.ante"), ante);
+    let small_blind_str = loc.get("blind.small").to_string();
+    let big_blind_str = loc.get("blind.big").to_string();
+    let boss_blind_str = loc.get("blind.boss").to_string();
+    let target_str = loc.get("ui.target").to_string();
+    let reward_str = loc.get("blind.reward").to_string();
+    let play_str = loc.get("blind.play").to_string();
+    let skip_str = loc.get("blind.skip").to_string();
+    let face_boss_str = loc.get("blind.face_boss").to_string();
+    let skip_hint_str = loc.get("blind.skip_hint").to_string();
+
+    let small_target_text = format!("{}: {}", target_str, small_target);
+    let big_target_text = format!("{}: {}", target_str, big_target);
+    let boss_target_text = format!("{}: {}", target_str, boss_target);
+    let small_reward_text = format!("{}: $3", reward_str);
+    let big_reward_text = format!("{}: $4", reward_str);
+    let boss_reward_text = format!("{}: $5", reward_str);
+
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -48,7 +67,6 @@ pub fn setup_blind_select(
         BackgroundColor(Color::srgb(0.08, 0.08, 0.14)),
         BlindSelectRoot,
     )).with_children(|parent| {
-        let title = format!("Select Blind — Ante {}", ante);
         parent.spawn((
             Text::new(title),
             TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 40.0, ..default() },
@@ -82,17 +100,17 @@ pub fn setup_blind_select(
                 BorderColor::from(Color::srgb(0.5, 0.5, 0.7)),
             )).with_children(|card| {
                 card.spawn((
-                    Text::new("Small Blind"),
+                    Text::new(small_blind_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
-                    Text::new(format!("Target: {}", small_target)),
+                    Text::new(small_target_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
-                    Text::new("Reward: $3"),
+                    Text::new(small_reward_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
@@ -109,7 +127,7 @@ pub fn setup_blind_select(
                     SelectSmallBlindButton,
                 )).with_children(|btn| {
                     btn.spawn((
-                        Text::new("Play"),
+                        Text::new(play_str.clone()),
                         TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
@@ -127,7 +145,7 @@ pub fn setup_blind_select(
                     SkipSmallBlindButton,
                 )).with_children(|btn| {
                     btn.spawn((
-                        Text::new("Skip"),
+                        Text::new(skip_str.clone()),
                         TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
@@ -151,17 +169,17 @@ pub fn setup_blind_select(
                 BorderColor::from(Color::srgb(0.5, 0.5, 0.7)),
             )).with_children(|card| {
                 card.spawn((
-                    Text::new("Big Blind"),
+                    Text::new(big_blind_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
-                    Text::new(format!("Target: {}", big_target)),
+                    Text::new(big_target_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
-                    Text::new("Reward: $4"),
+                    Text::new(big_reward_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
@@ -178,7 +196,7 @@ pub fn setup_blind_select(
                     SelectBigBlindButton,
                 )).with_children(|btn| {
                     btn.spawn((
-                        Text::new("Play"),
+                        Text::new(play_str.clone()),
                         TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
@@ -196,7 +214,7 @@ pub fn setup_blind_select(
                     SkipBigBlindButton,
                 )).with_children(|btn| {
                     btn.spawn((
-                        Text::new("Skip"),
+                        Text::new(skip_str.clone()),
                         TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
@@ -204,7 +222,6 @@ pub fn setup_blind_select(
             });
 
             // Boss blind card
-            let boss_label = boss_name.clone();
             row.spawn((
                 Node {
                     flex_direction: FlexDirection::Column,
@@ -221,22 +238,22 @@ pub fn setup_blind_select(
                 BorderColor::from(Color::srgb(0.8, 0.3, 0.3)),
             )).with_children(|card| {
                 card.spawn((
-                    Text::new("BOSS BLIND"),
+                    Text::new(boss_blind_str),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 16.0, ..default() },
                     TextColor(Color::srgb(1.0, 0.4, 0.4)),
                 ));
                 card.spawn((
-                    Text::new(boss_label),
+                    Text::new(boss_name),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 22.0, ..default() },
                     TextColor(Color::WHITE),
                 ));
                 card.spawn((
-                    Text::new(format!("Target: {}", boss_target)),
+                    Text::new(boss_target_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.8, 0.8, 1.0)),
                 ));
                 card.spawn((
-                    Text::new("Reward: $5"),
+                    Text::new(boss_reward_text),
                     TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
                     TextColor(Color::srgb(0.9, 0.8, 0.2)),
                 ));
@@ -253,7 +270,7 @@ pub fn setup_blind_select(
                     SelectBossBlindButton,
                 )).with_children(|btn| {
                     btn.spawn((
-                        Text::new("Face Boss"),
+                        Text::new(face_boss_str),
                         TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 20.0, ..default() },
                         TextColor(Color::WHITE),
                     ));
@@ -262,7 +279,7 @@ pub fn setup_blind_select(
         });
 
         parent.spawn((
-            Text::new("Skip Small/Big Blind to proceed directly to the next blind"),
+            Text::new(skip_hint_str),
             TextFont { font: crate::ui::current_font(lang, &fonts), font_size: 18.0, ..default() },
             TextColor(Color::srgb(0.6, 0.6, 0.6)),
         ));
