@@ -1,0 +1,5 @@
+# System library paths for Linux x86_64 builds.
+# These are needed for Bevy's wayland, alsa, and udev dependencies.
+# On other platforms (ARM, macOS, Windows) these are typically auto-detected.
+[env]
+PKG_CONFIG_PATH = "/usr/lib/x86_64-linux-gnu/pkgconfig:/lib/x86_64-linux-gnu/pkgconfig"
