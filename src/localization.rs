@@ -355,22 +355,8 @@ fn populate_flat_strings(
         // "boss_blind" doesn't have a single entry – use a label if present
     }
 
-    // Hard-coded keys that don't cleanly map from Lua
-    const STATIC_KEYS: &[&str] = &[
-        "title",
-        "blind",
-        "boss_blind",
-        "game_over",
-        "you_win",
-        "hand_reference",
-        "sort_rank",
-        "sort_suit",
-        "shop",
-        "score",
-        "chips",
-    ];
-    // Only fill these for English from Lua's dictionary when available,
-    // otherwise they stay as whatever was previously set (or fallback to key).
+    // Keys that don't cleanly map from Lua – seed English defaults so the
+    // existing UI code keeps working even when the Lua files are absent.
     if lang == Language::English {
         let defaults: &[(&str, &str)] = &[
             ("title", "BALATRO"),
@@ -386,14 +372,10 @@ fn populate_flat_strings(
             ("chips", "Chips"),
         ];
         for &(k, v) in defaults {
-            strings.entry(k.to_string()).or_default().entry(lang).or_insert_with(|| v.to_string());
+            let entry = strings.entry(k.to_string()).or_default();
+            entry.entry(lang).or_insert_with(|| v.to_string());
         }
     }
-
-    // Ensure every STATIC_KEY at least has the English fallback for non-English
-    // languages – the `get_for` method already falls back to English so this is
-    // not strictly necessary but keeps the map consistent.
-    let _ = STATIC_KEYS; // suppress unused warning
 }
 
 // ===========================================================================
@@ -582,19 +564,28 @@ impl<'a> LuaParser<'a> {
                 if rest.starts_with('{') {
                     self.advance();
                     if rest.contains('}') {
+                        // Inline: `key = { "a", "b" }` or `key = {}`
                         let items = Self::extract_inline_strings(rest);
-                        if items.len() == 1 {
-                            map.insert(key.to_string(), MiscValue::Single(items.into_iter().next().unwrap()));
-                        } else {
-                            map.insert(key.to_string(), MiscValue::List(items));
+                        match items.len() {
+                            0 => { /* empty table – skip */ }
+                            1 => {
+                                map.insert(key.to_string(), MiscValue::Single(items.into_iter().next().unwrap()));
+                            }
+                            _ => {
+                                map.insert(key.to_string(), MiscValue::List(items));
+                            }
                         }
                     } else {
                         // Multi-line table
                         let items = self.parse_string_list();
-                        if items.len() == 1 {
-                            map.insert(key.to_string(), MiscValue::Single(items.into_iter().next().unwrap()));
-                        } else {
-                            map.insert(key.to_string(), MiscValue::List(items));
+                        match items.len() {
+                            0 => { /* empty table – skip */ }
+                            1 => {
+                                map.insert(key.to_string(), MiscValue::Single(items.into_iter().next().unwrap()));
+                            }
+                            _ => {
+                                map.insert(key.to_string(), MiscValue::List(items));
+                            }
                         }
                     }
                 } else if let Some(v) = Self::extract_quoted(rest) {
