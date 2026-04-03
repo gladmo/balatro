@@ -375,8 +375,8 @@ fn move_scale(mv: &mut Moveable, _dt: f32, s: &MoveableSettings) {
 fn move_wh(mv: &mut Moveable, dt: f32, s: &MoveableSettings) {
     let target_w = if mv.pinch_x { 0.0 } else { mv.t_w };
     let target_h = if mv.pinch_y { 0.0 } else { mv.t_h };
-    let dir_w: f32 = if mv.pinch_x { -1.0 } else { 1.0 };
-    let dir_h: f32 = if mv.pinch_y { -1.0 } else { 1.0 };
+    let dir_w = if mv.pinch_x { -1.0 } else { 1.0 };
+    let dir_h = if mv.pinch_y { -1.0 } else { 1.0 };
 
     if (mv.vt_w - target_w).abs() > 0.01 {
         mv.vt_w += s.wh_speed * dt * dir_w * mv.t_w;
@@ -443,8 +443,6 @@ fn update_juice_system(
         let rot_offset =
             juice.rot_amt * (40.8 * t).sin() * remaining.powi(2);
 
-        let base_scale = transform.scale.x; // preserve any existing scale
-        let _ = base_scale;
         // Apply as additive offsets; the moveable system (if present) sets the base.
         transform.scale.x += scale_offset;
         transform.scale.y += scale_offset;
